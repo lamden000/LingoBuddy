@@ -1,0 +1,76 @@
+{
+  "project_info": {
+    "project_number": "787690888171",
+    "project_id": "lingobuddy-fd5eb",
+    "storage_bucket": "lingobuddy-fd5eb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:787690888171:android:d98663658faf50fd4397ae",
+        "android_client_info": {
+          "package_name": "com.example.lingobuddy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "787690888171-oi98lg6f89rsc38c1iu4ojuhbutq9ark.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJPvayMdTM0YfFN64vG2Fl5xhZRxtM8Zo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "787690888171-oi98lg6f89rsc38c1iu4ojuhbutq9ark.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:787690888171:android:dd37958e1e251ae94397ae",
+        "android_client_info": {
+          "package_name": "com.example.lingobuddypck"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "787690888171-8i17dsc2rpne16cmrisvlhos7ado1ij1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.lingobuddypck",
+            "certificate_hash": "5bcffce5b726d4885d9bea7dc018d8a2302e324a"
+          }
+        },
+        {
+          "client_id": "787690888171-oi98lg6f89rsc38c1iu4ojuhbutq9ark.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJPvayMdTM0YfFN64vG2Fl5xhZRxtM8Zo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "787690888171-oi98lg6f89rsc38c1iu4ojuhbutq9ark.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,4 +1,4 @@
-package com.example.lingobuddy
+package com.example.lingobuddypck
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -14,52 +14,12 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
-    /*  private val apiKey = "Actual API key" // Thay thế bằng API Key của bạn
-    private lateinit var editText: EditText
-    private lateinit var button: Button
-    private lateinit var resultTextView: TextView
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+    private val conversationHistory = mutableListOf<Message>(
+        Message("system", "Bạn là một trợ lý ảo vui vẻ và kiên nhẫn, giúp người học cải thiện tiếng Anh thông qua hội thoại tự nhiên.Tên: Lingo")
+    )
+    private val maxHistorySize = 10 // Store the 10 latest messages
 
-        editText = findViewById(R.id.editText)
-        button = findViewById(R.id.button)
-        resultTextView = findViewById(R.id.resultTextView)
-
-        button.setOnClickListener {
-            val text = editText.text.toString()
-            analyzeSentiment(text)
-        }
-    }
-
-    private fun analyzeSentiment(text: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val request = AnalyzeSentimentRequest(Document(text))
-                val response = RetrofitClient.instance.analyzeSentiment(apiKey, request)
-
-                withContext(Dispatchers.Main) {
-                    if (response.isSuccessful) {
-                        val sentiment = response.body()?.documentSentiment
-                        val result = "Score: ${sentiment?.score}, Magnitude: ${sentiment?.magnitude}"
-                        resultTextView.text = result
-                        Log.d("Sentiment", result)
-                    } else {
-                        val error = "Error: ${response.errorBody()?.string()}"
-                        resultTextView.text = error
-                        Log.e("Sentiment", error)
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    val error = "Exception: ${e.message}"
-                    resultTextView.text = error
-                    Log.e("Sentiment", error)
-                }
-            }
-        }
-    }*/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -79,18 +39,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendMessageToAI(message: String, responseText: TextView) {
-        val request = ChatRequest(
-            messages = listOf(
-                Message("system", "Bạn là một trợ lý AI."),
-                Message("user", message)
-            )
-        )
+        conversationHistory.add(Message("user", message))
+        enforceMaxHistorySize() // Ensure history doesn't exceed the limit
+
+        val request = ChatRequest(messages = conversationHistory)
 
         RetrofitClient.instance.chatWithAI(request).enqueue(object : Callback<ChatResponse> {
             override fun onResponse(call: Call<ChatResponse>, response: Response<ChatResponse>) {
                 if (response.isSuccessful) {
                     val aiResponse = response.body()?.output?.choices?.get(0)?.text
-                    responseText.text = aiResponse ?: "Không có phản hồi."
+                    if (aiResponse != null) {
+                        responseText.text = aiResponse
+                        conversationHistory.add(Message("assistant", aiResponse))
+                        enforceMaxHistorySize() // Ensure history doesn't exceed the limit after AI response
+                    } else {
+                        responseText.text = "Không có phản hồi."
+                    }
                 } else {
                     responseText.text = "Lỗi phản hồi từ AI."
                 }
@@ -100,5 +64,11 @@ class MainActivity : AppCompatActivity() {
                 responseText.text = "Lỗi: ${t.message}"
             }
         })
+    }
+
+    private fun enforceMaxHistorySize() {
+        while (conversationHistory.size > maxHistorySize) {
+            conversationHistory.removeAt(1) // Remove the oldest user or assistant message, keep system message
+        }
     }
 }

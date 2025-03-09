@@ -13,7 +13,7 @@ interface TogetherApi {
 data class ChatRequest(
     val model: String = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
     val messages: List<Message>,
-    val max_tokens: Int = 100
+    val max_tokens: Int = 300
 )
 
 data class Message(

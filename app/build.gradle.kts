@@ -1,14 +1,15 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
-}
+    id("com.google.gms.google-services")
+    }
 
 android {
-    namespace = "com.example.lingobuddy"
+    namespace = "com.example.lingobuddypck"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.lingobuddy"
+        applicationId = "com.example.lingobuddypck"
         minSdk = 28
         targetSdk = 34
         versionCode = 1
@@ -42,17 +43,7 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
     }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-    packaging {
-        resources {
-            excludes += "META-INF/INDEX.LIST"
-            excludes += "META-INF/DEPENDENCIES"
-        }
-    }
+
 }
 
 dependencies {
@@ -72,4 +63,9 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+    implementation(platform("com.google.firebase:firebase-bom:32.3.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation ("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation ("com.google.android.gms:play-services-auth:20.7.0")
 }

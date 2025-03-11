@@ -31,8 +31,8 @@ class LoginActivity : AppCompatActivity() {
         val emailEditText = findViewById<EditText>(R.id.etEmail)
         val passwordEditText = findViewById<EditText>(R.id.etPassword)
         val loginButton = findViewById<Button>(R.id.btnLogin)
-        val registerTextView = findViewById<TextView>(R.id.tvSignUp)
         val googleSignInButton = findViewById<ImageView>(R.id.imageGoogle)
+        val registerTextView= findViewById<TextView>(R.id.tvRegister)
 
         // Cấu hình Google Sign-In
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -46,6 +46,11 @@ class LoginActivity : AppCompatActivity() {
         googleSignInButton.setOnClickListener {
             val signInIntent = googleSignInClient.signInIntent
             googleSignInLauncher.launch(signInIntent)
+        }
+
+        registerTextView.setOnClickListener {
+            startActivity(Intent(this,RegisterActivity::class.java))
+
         }
 
         loginButton.setOnClickListener {

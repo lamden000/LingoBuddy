@@ -98,7 +98,7 @@
         app:layout_constraintTop_toBottomOf="@id/cbRememberMe" />
 
     <TextView
-        android:id="@+id/tvSignUp"
+        android:id="@+id/tvRegister"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
@@ -132,7 +132,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginEnd="16dp"
-            android:src="@drawable/googleicon" />
+            android:src="@drawable/ggicon" />
 
         <ImageView
             android:id="@+id/imageApple"

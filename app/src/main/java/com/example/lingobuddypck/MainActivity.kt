@@ -11,7 +11,7 @@ class MainActivity : AppCompatActivity() {
 
         // Kiểm tra nếu người dùng đã đăng nhập, điều hướng phù hợp
         val intent = if (FirebaseAuth.getInstance().currentUser != null) {
-            Intent(this, ChatWithAIActivity::class.java)
+            Intent(this, HomeActivity::class.java)
         } else {
             Intent(this, LoginActivity::class.java)
         }

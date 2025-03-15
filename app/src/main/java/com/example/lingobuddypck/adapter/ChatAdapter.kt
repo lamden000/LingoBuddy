@@ -1,11 +1,12 @@
-package com.example.lingobuddypck
+package com.example.lingobuddypck.adapter
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.lingobuddy.Network.TogetherAI.Message
+import com.example.lingobuddypck.Network.TogetherAI.Message
+import com.example.lingobuddypck.R
 
 class ChatAdapter(private val messages: MutableList<Message>) :
     RecyclerView.Adapter<ChatAdapter.ChatViewHolder>() {

@@ -25,7 +25,7 @@ class RegisterActivity : AppCompatActivity() {
         val registerButton = findViewById<Button>(R.id.buttonRegister)
         val signInTextView= findViewById<TextView>(R.id.tvSignIn)
         signInTextView.setOnClickListener {
-            startActivity(Intent(this,LoginActivity::class.java))
+            startActivity(Intent(this, LoginActivity::class.java))
 
         }
 

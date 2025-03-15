@@ -1,4 +1,4 @@
-package com.example.lingobuddypck
+package com.example.lingobuddypck.data
 
 import android.graphics.Rect
 import android.view.View

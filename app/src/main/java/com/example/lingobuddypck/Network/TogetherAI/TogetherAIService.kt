@@ -1,9 +1,8 @@
-package com.example.lingobuddy.Network.TogetherAI
+package com.example.lingobuddypck.Network.TogetherAI
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.Headers
 import retrofit2.http.POST
-import java.util.UUID
 
 interface TogetherApi {
     @Headers("Content-Type: application/json", "Authorization: Bearer 54b9de63b3f8a19573732caa41714fe6711816bf6ac33ceec867a26c6e8cd7e7")

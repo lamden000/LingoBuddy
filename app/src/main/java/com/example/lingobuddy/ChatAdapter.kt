@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.lingobuddy.Network.TogetherAI.Message
 
-class ChatAdapter(private val messages: List<Message>) :
+class ChatAdapter(private val messages: MutableList<Message>) :
     RecyclerView.Adapter<ChatAdapter.ChatViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChatViewHolder {
@@ -22,10 +22,17 @@ class ChatAdapter(private val messages: List<Message>) :
     }
 
     override fun getItemViewType(position: Int): Int {
-        return if (messages[position].role == "user") 0 else 1
+        return when (messages[position].role) {
+            "user" -> 0
+            else -> 1
+        }
     }
-
     override fun getItemCount() = messages.size
+
+    fun addMessage(message: Message) {
+        messages.add(message)
+        notifyItemInserted(messages.size - 1) // Cập nhật RecyclerView
+    }
 
     class ChatViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textMessage: TextView = itemView.findViewById(R.id.textMessage)

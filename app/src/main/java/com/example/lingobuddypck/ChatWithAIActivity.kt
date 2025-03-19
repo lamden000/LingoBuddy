@@ -58,7 +58,7 @@ class ChatWithAIActivity : AppCompatActivity() {
         recyclerView.scrollToPosition(adapter.itemCount - 1)
 
         val recentHistory = getRecentHistory()
-        val request = ChatRequest(messages = recentHistory)
+        val request = ChatRequest(model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",messages = recentHistory)
 
         RetrofitClient.instance.chatWithAI(request).enqueue(object : Callback<ChatResponse> {
             override fun onResponse(call: Call<ChatResponse>, response: Response<ChatResponse>) {

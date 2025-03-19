@@ -29,7 +29,9 @@ class HomeActivity : AppCompatActivity() {
             Feature("Nhập vai với AI", R.drawable.role_playing)
         )
         val featureActivities = mapOf(
-            "Chat với AI Gia Sư" to ChatWithAIActivity::class.java
+            "Chat với AI Gia Sư" to ChatWithAIActivity::class.java,
+            "Luyện phát âm bằng giọng nói" to PronunciationActivity::class.java,
+            "Nhận diện & Học từ vựng từ hình ảnh" to ImageLearningActivity::class.java
         )
 
         val adapter = FeatureAdapter(featureList) { feature ->

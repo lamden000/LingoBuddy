@@ -28,11 +28,13 @@ class ChatAdapter(private val messages: MutableList<Message>) :
             else -> 1
         }
     }
+
     override fun getItemCount() = messages.size
 
-    fun addMessage(message: Message) {
-        messages.add(message)
-        notifyItemInserted(messages.size - 1) // Cập nhật RecyclerView
+    fun setMessages(newMessages: List<Message>) {
+        messages.clear()
+        messages.addAll(newMessages)
+        notifyDataSetChanged()
     }
 
     class ChatViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -42,3 +44,4 @@ class ChatAdapter(private val messages: MutableList<Message>) :
         }
     }
 }
+

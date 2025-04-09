@@ -7,26 +7,34 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
+import com.example.lingobuddypck.ViewModel.RegisterViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 class RegisterActivity : AppCompatActivity() {
 
-    private lateinit var auth: FirebaseAuth
+    private lateinit var viewModel: RegisterViewModel
+
+    private lateinit var emailEditText: EditText
+    private lateinit var passwordEditText: EditText
+    private lateinit var repeatPasswordEditText: EditText
+    private lateinit var registerButton: Button
+    private lateinit var signInTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
 
-        auth = FirebaseAuth.getInstance()
+        viewModel = ViewModelProvider(this)[RegisterViewModel::class.java]
 
-        val emailEditText = findViewById<EditText>(R.id.editTextEmail)
-        val passwordEditText = findViewById<EditText>(R.id.editTextPassword)
-        val repeatPasswordEditText = findViewById<EditText>(R.id.editTextRepeatPassword)
-        val registerButton = findViewById<Button>(R.id.buttonRegister)
-        val signInTextView= findViewById<TextView>(R.id.tvSignIn)
+        emailEditText = findViewById(R.id.editTextEmail)
+        passwordEditText = findViewById(R.id.editTextPassword)
+        repeatPasswordEditText = findViewById(R.id.editTextRepeatPassword)
+        registerButton = findViewById(R.id.buttonRegister)
+        signInTextView = findViewById(R.id.tvSignIn)
+
         signInTextView.setOnClickListener {
             startActivity(Intent(this, LoginActivity::class.java))
-
         }
 
         registerButton.setOnClickListener {
@@ -34,35 +42,26 @@ class RegisterActivity : AppCompatActivity() {
             val password = passwordEditText.text.toString().trim()
             val repeatPassword = repeatPasswordEditText.text.toString().trim()
 
-            if (email.isEmpty() || password.isEmpty() || repeatPassword.isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập đầy đủ Email và Mật khẩu!", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+            viewModel.register(email, password, repeatPassword)
+        }
 
-            if (password != repeatPassword) {
-                Toast.makeText(this, "Mật khẩu nhập lại không khớp!", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+        observeViewModel()
+    }
 
-            if (password.length < 6) {
-                Toast.makeText(this, "Mật khẩu phải có ít nhất 6 ký tự!", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+    private fun observeViewModel() {
+        viewModel.registerSuccess.observe(this) { success ->
+            if (success) {
+                Toast.makeText(
+                    this,
+                    "Đăng ký thành công! Vui lòng xác thực email trước khi đăng nhập.",
+                    Toast.LENGTH_LONG
+                ).show()
             }
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this) { task ->
-                    if (task.isSuccessful) {
-                        val user = auth.currentUser
-                        user?.sendEmailVerification()?.addOnCompleteListener { verifyTask ->
-                            if (verifyTask.isSuccessful) {
-                                Toast.makeText(this, "Đăng ký thành công! Vui lòng xác thực email trước khi đăng nhập.", Toast.LENGTH_LONG).show()
-                            } else {
-                                Toast.makeText(this, "Không thể gửi email xác thực: ${verifyTask.exception?.message}", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    } else {
-                        Toast.makeText(this, "Lỗi: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
+        }
+
+        viewModel.errorMessage.observe(this) { message ->
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
     }
 }
+

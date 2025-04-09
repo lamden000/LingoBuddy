@@ -9,6 +9,7 @@ interface TogetherApi {
     @POST("inference")
     fun chatWithAI(@Body request: ChatRequest): Call<ChatResponse>
 
+    @Headers("Content-Type: application/json", "Authorization: Bearer 54b9de63b3f8a19573732caa41714fe6711816bf6ac33ceec867a26c6e8cd7e7")
     @POST("inference")
     fun chatWithImageAI(@Body request: ChatRequestImage): Call<ChatImageResponse>
 }

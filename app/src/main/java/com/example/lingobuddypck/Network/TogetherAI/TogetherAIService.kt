@@ -1,4 +1,5 @@
 package com.example.lingobuddypck.Network.TogetherAI
+import android.net.Uri
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.Headers
@@ -20,15 +21,11 @@ data class ChatRequest(
     val max_tokens: Int = 300
 )
 
-data class ChatRequestImage(
-    val model: String ,
-    val messages: List<Map<String, Any>>,
-    val max_tokens: Int = 300
-)
-
 data class Message(
     val role: String,
-    val content: String,
+    val content: String? = null,
+    val imageUri: Uri? = null,
+    val imageUrl: String? = null,
     val timestamp: Long = System.currentTimeMillis()
 )
 data class ChatResponse(
@@ -37,6 +34,12 @@ data class ChatResponse(
 
 data class ChatImageResponse(
     val choices: List<ChoiceImage>
+)
+
+data class ChatRequestImage(
+    val model: String ,
+    val messages: List<Map<String, Any>>,
+    val max_tokens: Int = 300
 )
 
 data class ChoiceImage(

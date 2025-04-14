@@ -19,7 +19,7 @@ class ChatViewModel : ViewModel() {
 
     private val systemMessage = Message(
         "system",
-        "Bạn là một trợ lý ảo vui vẻ và kiên nhẫn, giúp người học cải thiện tiếng Anh thông qua hội thoại tự nhiên. Tên:Lingo"
+        "Bạn là một trợ lý ảo giúp người học cải thiện tiếng Anh. Nếu người dùng nói tiếng Việt cung cấp phản hồi (Tiếng Việt-Tiếng Anh), Tên:Lingo"
     )
 
     private val fullHistory = mutableListOf<Message>(

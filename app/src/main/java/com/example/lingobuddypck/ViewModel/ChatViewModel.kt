@@ -17,26 +17,27 @@ class ChatViewModel : ViewModel() {
     private val _chatMessages = MutableLiveData<List<Message>>()
     val chatMessages: LiveData<List<Message>> = _chatMessages
 
+    val isLoading = MutableLiveData<Boolean>()
+
     private val systemMessage = Message(
         "system",
-        "Bạn là một trợ lý ảo giúp người học cải thiện tiếng Anh. Nếu người dùng nói tiếng Việt cung cấp phản hồi (Tiếng Việt-Tiếng Anh), Tên:Lingo"
+        "Bạn là một trợ lý ảo giúp người học cải thiện tiếng Anh, Tên:Lingo. Nếu nguời dùng nói tiếng anh, giúp họ sửa lỗi ngữ pháp hoặc từ vựng (nếu có, giải thích bằng tiếng Việt) "
     )
 
-    private val fullHistory = mutableListOf<Message>(
-        systemMessage
-    )
+    private val fullHistory = mutableListOf(systemMessage)
 
     init {
         val welcome = Message("system", "Tôi giúp gì được cho bạn hôm nay?")
         fullHistory.add(welcome)
-
-        // UI only sees messages excluding the hidden system prompt
         _chatMessages.value = fullHistory.filter { it != systemMessage }
     }
+
     fun sendMessage(userInput: String) {
         val userMessage = Message("user", userInput)
         fullHistory.add(userMessage)
         _chatMessages.value = fullHistory.filter { it != systemMessage }
+
+        isLoading.postValue(true)
 
         val recentHistory = getRecentHistory()
         val request = ChatRequest(
@@ -46,6 +47,7 @@ class ChatViewModel : ViewModel() {
 
         RetrofitClient.instance.chatWithAI(request).enqueue(object : Callback<ChatResponse> {
             override fun onResponse(call: Call<ChatResponse>, response: Response<ChatResponse>) {
+                isLoading.postValue(false)
                 val aiResponse = response.body()?.output?.choices?.getOrNull(0)?.text
                 if (!aiResponse.isNullOrEmpty()) {
                     val assistantMessage = Message("assistant", aiResponse)
@@ -55,7 +57,8 @@ class ChatViewModel : ViewModel() {
             }
 
             override fun onFailure(call: Call<ChatResponse>, t: Throwable) {
-                // You can post a system error message here if desired
+                isLoading.postValue(false)
+                // Có thể thêm xử lý lỗi tại đây
             }
         })
     }

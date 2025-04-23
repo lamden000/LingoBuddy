@@ -6,31 +6,41 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.lingobuddypck.Network.TogetherAI.Message
 import com.example.lingobuddypck.R
 
 class ChatAdapter(private val messages: MutableList<Message>) :
-    RecyclerView.Adapter<ChatAdapter.ChatViewHolder>() {
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChatViewHolder {
-        val layout = if (viewType == 0) R.layout.item_message else R.layout.item_message_other
-        val view = LayoutInflater.from(parent.context).inflate(layout, parent, false)
-        return ChatViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: ChatViewHolder, position: Int) {
-        holder.bind(messages[position])
+    companion object {
+        private const val VIEW_TYPE_USER = 0
+        private const val VIEW_TYPE_AI = 1
     }
 
     override fun getItemViewType(position: Int): Int {
-        return when (messages[position].role) {
-            "user" -> 0
-            else -> 1
+        return if (messages[position].role == "user") VIEW_TYPE_USER else VIEW_TYPE_AI
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        return if (viewType == VIEW_TYPE_USER) {
+            val view = inflater.inflate(R.layout.item_message, parent, false)
+            UserMessageViewHolder(view)
+        } else {
+            val view = inflater.inflate(R.layout.item_message_other, parent, false)
+            AIMessageViewHolder(view)
         }
     }
 
-    override fun getItemCount() = messages.size
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        val message = messages[position]
+        when (holder) {
+            is UserMessageViewHolder -> holder.bind(message)
+            is AIMessageViewHolder -> holder.bind(message)
+        }
+    }
+
+    override fun getItemCount(): Int = messages.size
 
     fun setMessages(newMessages: List<Message>) {
         messages.clear()
@@ -38,22 +48,19 @@ class ChatAdapter(private val messages: MutableList<Message>) :
         notifyDataSetChanged()
     }
 
-    class ChatViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class UserMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textMessage: TextView = itemView.findViewById(R.id.textMessage)
-        private val imageMessage: ImageView = itemView.findViewById(R.id.imageMessage)
-
         fun bind(message: Message) {
-            if (message.imageUri != null) {
-                textMessage.visibility = View.GONE
-                imageMessage.visibility = View.VISIBLE
-                Glide.with(itemView.context)
-                    .load(message.imageUri)
-                    .into(imageMessage)
-            } else {
-                imageMessage.visibility = View.GONE
-                textMessage.visibility = View.VISIBLE
-                textMessage.text = message.content
-            }
+            textMessage.text = message.content
+        }
+    }
+
+    class AIMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val textMessage: TextView = itemView.findViewById(R.id.textMessage)
+        private val avatarImage: ImageView = itemView.findViewById(R.id.avatarAI)
+        fun bind(message: Message) {
+            textMessage.text = message.content
+            avatarImage.setImageResource(R.drawable.avatar_ai)
         }
     }
 }

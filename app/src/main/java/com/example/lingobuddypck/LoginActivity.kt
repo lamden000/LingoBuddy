@@ -29,6 +29,8 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var loginButton: Button
     private lateinit var googleSignInButton: ImageView
     private lateinit var registerTextView: TextView
+    private lateinit var forgotPasswordText: TextView
+
 
     private val googleSignInLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val data = result.data
@@ -55,6 +57,8 @@ class LoginActivity : AppCompatActivity() {
         loginButton = findViewById(R.id.btnLogin)
         googleSignInButton = findViewById(R.id.imageGoogle)
         registerTextView = findViewById(R.id.tvRegister)
+        forgotPasswordText = findViewById(R.id.tvForgotPassword)
+
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken("787690888171-oi98lg6f89rsc38c1iu4ojuhbutq9ark.apps.googleusercontent.com")
@@ -77,7 +81,11 @@ class LoginActivity : AppCompatActivity() {
         registerTextView.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
-
+        forgotPasswordText.setOnClickListener {
+            // ✅ Navigate to ResetPasswordActivity
+            val intent = Intent(this, ResetPasswordActivity::class.java)
+            startActivity(intent)
+        }
         observeViewModel()
     }
 

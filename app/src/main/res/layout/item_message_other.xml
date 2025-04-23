@@ -1,23 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="start"
     android:padding="8dp">
 
-    <!-- Text message view -->
+    <ImageView
+        android:id="@+id/avatarAI"
+        android:layout_width="59dp"
+        android:layout_height="65dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/circle_white_bg"
+        android:contentDescription="Avatar AI"
+        android:scaleType="centerCrop"
+        android:src="@drawable/avatar_ai" />
+
     <TextView
         android:id="@+id/textMessage"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:background="@drawable/bubble_left"/>
-
-    <!-- Image view for displaying images -->
-    <ImageView
-        android:id="@+id/imageMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:layout_gravity="center"
-        android:background="@drawable/bubble_left"/>
+        android:background="@drawable/bubble_left"
+        android:textColor="#000000"
+        android:textSize="16sp"
+        android:padding="10dp" />
 </LinearLayout>

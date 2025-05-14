@@ -26,8 +26,8 @@ class RoleSelectionFragment : Fragment() {
     private lateinit var customUserRoleEditTxt: EditText
     private lateinit var customContextEditTxt: EditText
 
-    private var roles = listOf("Doctor", "Patient", "Teacher", "Student")
-    private var contexts = listOf("In a hospital", "In a classroom")
+    private var roles = listOf("Doctor", "Customer", "Patient", "Teacher", "Student", "Employee","Staff")
+    private var contexts = listOf("In a hospital", "In a classroom", "In a Coffee", "In a Airport" )
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_role_selection, container, false)
@@ -60,9 +60,20 @@ class RoleSelectionFragment : Fragment() {
         }
 
         startButton.setOnClickListener {
-            val userRole = userSpinner.selectedItem.toString()
-            val aiRole = aiSpinner.selectedItem.toString()
-            val context = contextSpinner.selectedItem.toString()
+            val userRole:String
+            val aiRole:String
+            val context:String
+            if(!customSwitch.isChecked)
+            {
+                userRole = userSpinner.selectedItem.toString()
+                aiRole = aiSpinner.selectedItem.toString()
+                context = contextSpinner.selectedItem.toString()
+            }
+            else{
+                userRole =  customUserRoleEditTxt.text.toString()
+                aiRole = customAIRoleEditTxt.text.toString()
+                context = customContextEditTxt.text.toString()
+            }
             val bundle = Bundle().apply {
                 putString("UserRole", userRole)
                 putString("AIRole", aiRole)

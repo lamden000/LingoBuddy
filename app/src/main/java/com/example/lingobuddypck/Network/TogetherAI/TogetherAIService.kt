@@ -18,7 +18,7 @@ interface TogetherApi {
 data class ChatRequest(
     val model: String ,
     val messages: List<Message>,
-    val max_tokens: Int = 300
+    val max_tokens: Int = 1000
 )
 
 data class Message(
@@ -39,7 +39,7 @@ data class ChatImageResponse(
 data class ChatRequestImage(
     val model: String ,
     val messages: List<Map<String, Any>>,
-    val max_tokens: Int = 300
+    val max_tokens: Int = 1000
 )
 
 data class ChoiceImage(

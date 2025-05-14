@@ -21,6 +21,9 @@
         android:theme="@style/Theme.LingoBuddy"
         tools:targetApi="31">
         <activity
+            android:name=".RolePlayActivity"
+            android:exported="false" />
+        <activity
             android:name=".ResetPasswordActivity"
             android:exported="false" />
         <activity

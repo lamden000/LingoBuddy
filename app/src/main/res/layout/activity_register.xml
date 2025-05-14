@@ -95,6 +95,7 @@
         android:layout_marginTop="36dp"
         android:backgroundTint="@color/blue"
         android:text="Sign up"
+        android:background="@drawable/rounded_button"
         android:textColor="@android:color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"

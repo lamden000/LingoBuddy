@@ -1,0 +1,176 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Your Role -->
+
+    <EditText
+        android:id="@+id/editTxtUserRole"
+        android:layout_width="138dp"
+        android:layout_height="41dp"
+        android:ems="10"
+        android:hint="Vai trò của bạn"
+        android:inputType="text"
+        app:layout_constraintBottom_toTopOf="@+id/btn_start_conversation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@+id/editTxtAIRole"
+        app:layout_constraintTop_toBottomOf="@+id/text_user_role_custom"
+        app:layout_constraintVertical_bias="0.083" />
+
+    <TextView
+        android:id="@+id/text_user_role_custom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="88dp"
+        android:text="Your Role"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.884"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_swap_roles" />
+
+    <TextView
+        android:id="@+id/text_ai_role_custom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="AI's Role"
+        app:layout_constraintBottom_toTopOf="@+id/btn_start_conversation"
+        app:layout_constraintEnd_toStartOf="@+id/text_user_role_custom"
+        app:layout_constraintHorizontal_bias="0.011"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView"
+        app:layout_constraintVertical_bias="0.136" />
+
+    <TextView
+        android:id="@+id/text_user_role"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="Your Role"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Spinner
+        android:id="@+id/spinner_user_role"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/text_user_role"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- AI Role -->
+    <TextView
+        android:id="@+id/text_ai_role"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AI's Role"
+        app:layout_constraintTop_toBottomOf="@id/spinner_user_role"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <Spinner
+        android:id="@+id/spinner_ai_role"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/text_ai_role"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Context -->
+    <TextView
+        android:id="@+id/text_context"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Context"
+        app:layout_constraintTop_toBottomOf="@id/spinner_ai_role"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <Spinner
+        android:id="@+id/spinner_context"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/text_context"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Swap Button -->
+    <Button
+        android:id="@+id/btn_swap_roles"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Swap Roles"
+        app:layout_constraintTop_toBottomOf="@id/spinner_context"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="24dp" />
+
+    <!-- Start Conversation -->
+
+    <Button
+        android:id="@+id/btn_start_conversation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="348dp"
+        android:text="Start Conversation"
+        android:background="@drawable/rounded_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_swap_roles" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/customSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@+id/btn_start_conversation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_swap_roles"
+        app:layout_constraintVertical_bias="0.062" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="154dp"
+        android:layout_height="30dp"
+        android:layout_marginTop="20dp"
+        android:text="Bối cảnh tùy chọn"
+        android:textAlignment="center"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/btn_start_conversation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_swap_roles"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <EditText
+        android:id="@+id/editTxtAIRole"
+        android:layout_width="114dp"
+        android:layout_height="39dp"
+        android:ems="10"
+        android:hint="Vai trò của AI"
+        android:inputType="text"
+        app:layout_constraintBottom_toTopOf="@+id/btn_start_conversation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_ai_role_custom"
+        app:layout_constraintVertical_bias="0.083" />
+
+    <EditText
+        android:id="@+id/editTxtCustomContext"
+        android:layout_width="327dp"
+        android:layout_height="88dp"
+        android:ems="10"
+        android:inputType="text"
+        android:textAlignment="gravity"
+        android:hint="Bối cảnh tùy chọn"
+        app:layout_constraintBottom_toTopOf="@+id/btn_start_conversation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.867" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

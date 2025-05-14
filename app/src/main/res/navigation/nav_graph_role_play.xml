@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph_role_play"
+    app:startDestination="@id/roleSelectionFragment">
+
+    <fragment
+        android:id="@+id/roleSelectionFragment"
+        android:name="com.example.lingobuddypck.ui.RoleSelectionFragment"
+        android:label="Choose Roles">
+        <action
+            android:id="@+id/action_roleSelectionFragment_to_rolePlayChatFragment"
+            app:destination="@id/rolePlayChatFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/rolePlayChatFragment"
+        android:name="com.example.lingobuddypck.ui.RolePlayChatFragment"
+        android:label="Roleplay Chat">
+        <argument
+            android:name="userRole"
+            app:argType="string" />
+        <argument
+            android:name="aiRole"
+            app:argType="string" />
+        <argument
+            android:name="context"
+            app:argType="string" />
+    </fragment>
+</navigation>

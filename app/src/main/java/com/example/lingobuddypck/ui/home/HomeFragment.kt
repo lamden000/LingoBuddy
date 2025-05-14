@@ -13,6 +13,7 @@ import com.example.lingobuddypck.ChatWithAIActivity
 import com.example.lingobuddypck.ImageLearningActivity
 import com.example.lingobuddypck.PronunciationActivity
 import com.example.lingobuddypck.R
+import com.example.lingobuddypck.RolePlayActivity
 import com.example.lingobuddypck.adapter.FeatureAdapter
 import com.example.lingobuddypck.data.Feature
 
@@ -42,7 +43,8 @@ class HomeFragment : Fragment() {
         val featureActivities = mapOf(
             "Chat với AI Gia Sư" to ChatWithAIActivity::class.java,
             "Luyện phát âm bằng giọng nói" to PronunciationActivity::class.java,
-            "Nhận diện & Học từ vựng từ hình ảnh" to ImageLearningActivity::class.java
+            "Nhận diện & Học từ vựng từ hình ảnh" to ImageLearningActivity::class.java,
+            "Nhập vai với AI" to RolePlayActivity::class.java
         )
 
         val adapter = FeatureAdapter(featureList) { feature ->

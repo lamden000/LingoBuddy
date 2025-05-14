@@ -11,23 +11,27 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class ChatViewModel : ViewModel() {
+class RolePlayChatViewModel(
+    private val role: String,
+    private val context: String
+) : ViewModel() {
 
-    private val maxHistorySize = 9
+    private val maxHistorySize = 5
+
     private val _chatMessages = MutableLiveData<List<Message>>()
     val chatMessages: LiveData<List<Message>> = _chatMessages
 
     val isLoading = MutableLiveData<Boolean>()
 
     private val systemMessage = Message(
-        "system",
-        "Bạn là một trợ lý ảo giúp người học cải thiện tiếng Anh, Tên:Lingo. Nếu nguời dùng nói tiếng anh, giúp họ sửa lỗi ngữ pháp hoặc từ vựng (nếu có, giải thích bằng tiếng Việt) "
+        role = "system",
+        content = buildSystemPrompt(role, context)
     )
 
     private val fullHistory = mutableListOf(systemMessage)
 
     init {
-        val welcome = Message("system", "Tôi giúp gì được cho bạn hôm nay?")
+        val welcome = Message("system", "Chúng ta sẽ bắt đầu vai trò: $role — $context. Bạn sẵn sàng chưa?")
         fullHistory.add(welcome)
         _chatMessages.value = fullHistory.filter { it != systemMessage }
     }
@@ -58,17 +62,21 @@ class ChatViewModel : ViewModel() {
 
             override fun onFailure(call: Call<ChatResponse>, t: Throwable) {
                 isLoading.postValue(false)
-                // Có thể thêm xử lý lỗi tại đây
+                // Optional: handle error
             }
         })
     }
 
     private fun getRecentHistory(): List<Message> {
-        val recentMessages = if (fullHistory.size > maxHistorySize) {
+        val recent = if (fullHistory.size > maxHistorySize) {
             fullHistory.takeLast(maxHistorySize)
         } else {
             fullHistory
         }
-        return listOf(systemMessage) + recentMessages.filter { it != systemMessage }
+        return listOf(systemMessage) + recent.filter { it != systemMessage }
+    }
+
+    private fun buildSystemPrompt(role: String, context: String): String {
+        return "Bạn sẽ đóng vai trò là '$role' trong ngữ cảnh '$context'. Hãy phản hồi giống như một người thật đang đóng vai đó bằng tiếng anh để giúp người dùng học tiếng anh. Hãy giúp họ sửa lỗi nếu có và giải thích bằng tiếng Việt.Cấu trúc: Phản hồi tiếng anh (Sửa lỗi tiếng việt)"
     }
 }

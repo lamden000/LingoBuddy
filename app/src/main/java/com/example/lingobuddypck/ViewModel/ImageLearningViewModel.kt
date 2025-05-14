@@ -66,7 +66,7 @@ class ImageLearningViewModel : ViewModel() {
                             // Prepare AI's response message
                             val aiMessage = Message(
                                 content = responseContent,
-                                role = "ai",
+                                role = "AI",
                                 imageUri = null // AI response will contain text only
                             )
 
@@ -91,13 +91,13 @@ class ImageLearningViewModel : ViewModel() {
 
                     override fun onFailure(call: Call<ChatImageResponse>, t: Throwable) {
                         _loading.value = false
-                        _chatMessages.value = listOf(Message("Error: ${t.message}", "ai", null))
+                        _chatMessages.value = listOf(Message("Ai", "Error: ${t.message}", null))
                         Log.e("API_ERROR", "API call failed", t)
                     }
                 })
             } catch (e: Exception) {
                 _loading.value = false
-                _chatMessages.value = listOf(Message("Error encoding image: ${e.message}", "ai", null))
+                _chatMessages.value = listOf(Message("Error encoding image: ${e.message}", "Ai", null))
                 Log.e("IMAGE_ENCODING", "Image encoding failed", e)
             }
         }

@@ -12,7 +12,8 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class RolePlayChatViewModel(
-    private val role: String,
+    private val userRole: String,
+    private val aiRole: String,
     private val context: String
 ) : ViewModel() {
 
@@ -25,13 +26,13 @@ class RolePlayChatViewModel(
 
     private val systemMessage = Message(
         role = "system",
-        content = buildSystemPrompt(role, context)
+        content = buildSystemPrompt(aiRole, userRole, context)
     )
 
     private val fullHistory = mutableListOf(systemMessage)
 
     init {
-        val welcome = Message("system", "Chúng ta sẽ bắt đầu vai trò: $role — $context. Bạn sẵn sàng chưa?")
+        val welcome = Message("system", "Chúng ta sẽ bắt đầu vai trò: tôi: $aiRole - $context - bạn: $userRole. Bạn sẵn sàng chưa?")
         fullHistory.add(welcome)
         _chatMessages.value = fullHistory.filter { it != systemMessage }
     }
@@ -76,7 +77,7 @@ class RolePlayChatViewModel(
         return listOf(systemMessage) + recent.filter { it != systemMessage }
     }
 
-    private fun buildSystemPrompt(role: String, context: String): String {
-        return "Bạn sẽ đóng vai trò là '$role' trong ngữ cảnh '$context'. Hãy phản hồi giống như một người thật đang đóng vai đó bằng tiếng anh để giúp người dùng học tiếng anh. Hãy giúp họ sửa lỗi nếu có và giải thích bằng tiếng Việt.Cấu trúc: Phản hồi tiếng anh (Sửa lỗi tiếng việt)"
+    private fun buildSystemPrompt(aiRole: String,userRole:String, context: String): String {
+        return "Bạn sẽ đóng vai trò là '$aiRole' trong ngữ cảnh '$context', người dùng là '$userRole'. Hãy phản hồi giống như một người thật đang đóng vai đó bằng tiếng anh để giúp người dùng học tiếng anh. Hãy giúp họ sửa lỗi nếu có và giải thích bằng tiếng Việt.Cấu trúc: Phản hồi tiếng anh (Sửa lỗi tiếng việt)"
     }
 }

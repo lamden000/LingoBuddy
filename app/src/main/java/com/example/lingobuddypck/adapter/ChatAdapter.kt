@@ -50,8 +50,16 @@ class ChatAdapter(private val messages: MutableList<Message>) :
 
     class UserMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textMessage: TextView = itemView.findViewById(R.id.textMessage)
+        private val messageImage: ImageView = itemView.findViewById(R.id.messageImage)
+
         fun bind(message: Message) {
             textMessage.text = message.content
+            if (message.imageUri != null) {
+                messageImage.visibility = View.VISIBLE
+                messageImage.setImageURI(message.imageUri)
+            } else {
+                messageImage.visibility = View.GONE
+            }
         }
     }
 

@@ -31,10 +31,11 @@ class RolePlayChatFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val role = arguments?.getString("AIRole") ?: "Giáo viên"
+        val aiRole = arguments?.getString("AIRole") ?: "Giáo viên"
+        val userRole= arguments?.getString("UserRole") ?: "Giáo viên"
         val contextText = arguments?.getString("context") ?: "Lớp học tiếng Anh"
 
-        val factory = RolePlayViewModelFactory(role, contextText)
+        val factory = RolePlayViewModelFactory(userRole,aiRole, contextText)
         viewModel = ViewModelProvider(this, factory)[RolePlayChatViewModel::class.java]
 
         val inputMessage = view.findViewById<EditText>(R.id.inputMessage)

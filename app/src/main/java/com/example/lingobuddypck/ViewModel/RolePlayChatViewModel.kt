@@ -78,6 +78,6 @@ class RolePlayChatViewModel(
     }
 
     private fun buildSystemPrompt(aiRole: String,userRole:String, context: String): String {
-        return "Bạn sẽ đóng vai trò là '$aiRole' trong ngữ cảnh '$context', người dùng là '$userRole'. Hãy phản hồi giống như một người thật đang đóng vai đó bằng tiếng anh để giúp người dùng học tiếng anh. Hãy giúp họ sửa lỗi nếu có và giải thích bằng tiếng Việt.Cấu trúc: Phản hồi tiếng anh (Sửa lỗi tiếng việt)"
+        return "Bạn sẽ đóng vai trò là '$aiRole' trong ngữ cảnh '$context', người dùng là '$userRole'. Hãy phản hồi giống như một người thật đang đóng vai '$aiRole' bằng tiếng anh. Sau đó hãy giúp họ sửa lỗi nếu có .Cấu trúc: Phản hồi tiếng anh (Sửa lỗi bằng tiếng việt)"
     }
 }

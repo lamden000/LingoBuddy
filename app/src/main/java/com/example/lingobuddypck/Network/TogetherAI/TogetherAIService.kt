@@ -61,3 +61,28 @@ data class Output(
 data class Choice(
     val text: String
 )
+
+//Test data
+data class AIQuestionResponse(
+    val questions: List<QuestionData>
+)
+
+data class QuestionData(
+    val id: String,
+    val question_text: String,
+    val options: Map<String, String>, // {"a": "Text A", "b": "Text B", ...}
+    val correct_answer: String // "a", "b", "c", hoặc "d"
+)
+
+// Dùng để lưu câu trả lời của người dùng
+data class UserAnswer(
+    val questionId: String,
+    val selectedOptionKey: String // "a", "b", "c", hoặc "d"
+)
+
+// Dùng để parse JSON kết quả chấm điểm từ AI
+data class AIGradingResult(
+    val score: Int,
+    val total_questions: Int,
+    val feedback: Map<String, String>? // Optional: {"q1": "correct", "q2": "incorrect"}
+)

@@ -259,7 +259,11 @@ class TestViewModel : ViewModel() {
             rawResponse // Hoặc "" hoặc throw Exception("Invalid JSON response")
         }
     }
-
+    fun clearGradingResult() {
+        _gradingResult.value = null // Setting it to null will hide the result UI
+        // Optionally reset error message too if needed
+        // _errorMesssage.value = null
+    }
     fun clearErrorMessage() {
         _errorMesssage.value = null
     }

@@ -85,19 +85,19 @@ class ImageLearningViewModel : ViewModel() {
                             _chatMessages.value = currentMessages
                         } else {
                             _loading.value = false
-                            _chatMessages.value = listOf(Message("Error: ${response.message()}", "ai", null))
+                            _chatMessages.value = listOf(Message("Error: ${response.message()}", "ai"))
                         }
                     }
 
                     override fun onFailure(call: Call<ChatImageResponse>, t: Throwable) {
                         _loading.value = false
-                        _chatMessages.value = listOf(Message("Ai", "Error: ${t.message}", null))
+                        _chatMessages.value = listOf(Message("Ai", "Error: ${t.message}"))
                         Log.e("API_ERROR", "API call failed", t)
                     }
                 })
             } catch (e: Exception) {
                 _loading.value = false
-                _chatMessages.value = listOf(Message("Error encoding image: ${e.message}", "Ai", null))
+                _chatMessages.value = listOf(Message("Error encoding image: ${e.message}", "Ai"))
                 Log.e("IMAGE_ENCODING", "Image encoding failed", e)
             }
         }

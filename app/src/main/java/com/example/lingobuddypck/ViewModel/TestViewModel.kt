@@ -48,7 +48,7 @@ class TestViewModel : ViewModel() {
     )
 
 
-    fun fetchTest(topic: String) {
+    fun fetchTest(topic: String,isCustom:Boolean) {
         _isLoading.value = true
         _testQuestions.value = null // Xóa câu hỏi cũ
         _gradingResult.value = null // Xóa kết quả cũ
@@ -59,7 +59,7 @@ class TestViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val prompt ="""
-                    Please generate a multiple-choice quiz with 5 questions on the topic "$type" "$topic" .Focus on English learning
+                    Please generate a multiple-choice quiz with 10 questions on the topic "$type" "$topic" .Focus on English learning
                     Each question must have four options: a, b, c, and d.
                     For each question, provide:
                     - The question text
@@ -92,30 +92,17 @@ class TestViewModel : ViewModel() {
                           "options": { "a": "...", "b": "...", "c": "...", "d": "..." },
                           "correct_answer": "b"
                         },
-                        {
-                          "id": "q3",
-                          "question_text": "Question 3 content...",
-                          "options": { "a": "...", "b": "...", "c": "...", "d": "..." },
-                          "correct_answer": "c"
-                        },
-                        {
-                          "id": "q4",
-                          "question_text": "Question 4 content...",
-                          "options": { "a": "...", "b": "...", "c": "...", "d": "..." },
-                          "correct_answer": "d"
-                        },
-                        {
-                          "id": "q5",
-                          "question_text": "Question 5 content...",
-                          "options": { "a": "...", "b": "...", "c": "...", "d": "..." },
-                          "correct_answer": "a"
-                        }
+                        ....
                       ]
                     }
                     """.trimIndent()
 
                 val messages = listOf(systemMessageForTestGeneration, Message("user", prompt))
-                 val request = ChatRequest(model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", messages = messages)
+                val model:String;
+                if(isCustom)
+                {model="deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free"}
+                else{model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"}
+                 val request = ChatRequest(model, messages = messages)
 
                 val response = RetrofitClient.instance.chatWithAI(request).awaitResponse()
                 val responseJson = response.body()?.output?.choices?.getOrNull(0)?.text
@@ -124,7 +111,7 @@ class TestViewModel : ViewModel() {
                     // Cố gắng trích xuất chỉ phần JSON nếu AI trả về thêm text thừa
                     val actualJson = extractJson(responseJson)
                     val aiResponse = gson.fromJson(actualJson, AIQuestionResponse::class.java)
-                    if (aiResponse.questions.size == 5) {
+                    if (aiResponse.questions.size == 10) {
                         _testQuestions.postValue(aiResponse.questions)
                     } else {
                         _errorMesssage.postValue("AI không trả về đủ 5 câu hỏi.")
@@ -141,87 +128,117 @@ class TestViewModel : ViewModel() {
             }
         }
     }
-
     fun submitAnswers(userAnswers: List<UserAnswer>) {
         _isLoading.value = true
         _gradingResult.value = null
         _errorMesssage.value = null
 
-        val currentQuestions = _testQuestions.value
-        if (currentQuestions == null) {
+        val currentQuestions = _testQuestions.value // Assuming this is LiveData<List<TestQuestion>> or similar
+        if (currentQuestions == null || currentQuestions.isEmpty()) {
             _errorMesssage.value = "Không có bài test để chấm điểm."
             _isLoading.value = false
             return
         }
 
-        val userAnswersString = userAnswers.joinToString("; ") { answer ->
+        // Prepare user answers string for the prompt (format: question_number,choice;)
+        val userAnswersString = userAnswers.joinToString(";") { answer ->
             val questionIndex = currentQuestions.indexOfFirst { it.id == answer.questionId }
+            // Use 1-based index for AI prompt if questionId is not reliable for numbering
             if (questionIndex != -1) {
-                "${questionIndex + 1},${answer.selectedOptionKey}"
+                // Using questionIndex + 1 as the identifier in the prompt (q1, q2, etc.)
+                "q${questionIndex + 1},${answer.selectedOptionKey}"
             } else {
+                // Fallback to using the question ID if index isn't found (less ideal for AI)
                 "${answer.questionId},${answer.selectedOptionKey}"
             }
-        } + ";"
+        } + ";" // Ensure trailing semicolon as requested by the format
 
-        viewModelScope.launch {
-            try {
-                val questionsJsonForGrading = gson.toJson(currentQuestions.map {
-                    mapOf(
-                        "id" to it.id,
-                        "question_text" to it.question_text,
-                        "options" to it.options,
-                        "correct_answer" to it.correct_answer
-                    )
-                })
+        // Prepare questions JSON for grading
+        val questionsJsonForGrading = gson.toJson(currentQuestions.map {
+            mapOf(
+                "id" to it.id,
+                "question_text" to it.question_text,
+                "options" to it.options,
+                "correct_answer" to it.correct_answer // Include correct answer
+            )
+        })
 
-                val gradingPrompt = """
-                Below is a multiple-choice quiz with correct answers and the user's answers.
-                Please grade it and return how many answers are correct.
+        val gradingPrompt = """
+            Below is a multiple-choice quiz with correct answers and the user's answers.
+            Please grade it and return how many answers are correct.
+            For each question, provide the status ("correct" or "incorrect").
+            If the answer is incorrect, provide a brief "explanation" field detailing why the user's answer is wrong and what the correct answer is, based on the provided question text and options.
+            Write explanation in Vietnamese
+            Quiz with correct answers (in JSON format):
+            ```json
+            $questionsJsonForGrading
+            ```
 
-                Quiz with correct answers (in JSON format):
-                ```json
-                $questionsJsonForGrading
-                ```
+            User's answers (format: question_identifier,choice;):
+            $userAnswersString
 
-                User's answers (format: question_number,choice;):
-                $userAnswersString
-
-                Return a response in **pure JSON format**, no explanation, no extra text:
-                ```json
-                {
-                  "score": [number_of_correct_answers],
-                  "total_questions": 5,
-                  "feedback": {
-                    "q1": "correct",
-                    "q2": "incorrect",
-                    "q3": "correct",
-                    ...
-                  }
+            Return a response in **pure JSON format**, no explanation, no extra text outside the JSON object. The JSON structure should be:
+            ```json
+            {
+              "score": [number_of_correct_answers],
+              "total_questions": ${currentQuestions.size}, // Make total_questions dynamic
+              "feedback": {
+                "q1": {
+                  "status": "correct"
+                },
+                "q2": {
+                  "status": "incorrect",
+                  "explanation": "Câu trả lời của bạn [user_choice_key] is incorrect. The correct answer is [correct_choice_key] because [brief reason based on question/options]."
+                },
+                 "q3": {
+                  "status": "correct"
                 }
-                ```
-            """.trimIndent()
+                // ... for all questions (q1, q2, q3...)
+              }
+            }
+            ```
+        """.trimIndent()
 
+        viewModelScope.launch { // Assume viewModelScope is available
+            try {
                 val messages = listOf(systemMessageForGrading, Message("user", gradingPrompt))
+                // Assume Message and ChatRequest data classes exist
                 val request = ChatRequest(
-                    model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-                    messages = messages
+                    model = "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free", // Or your preferred model
+                    messages = messages,
+                    temperature = 0.1 // Lower temperature might help for factual grading
+                    // Add other parameters if needed, like max_tokens
                 )
 
+                // Assume RetrofitClient.instance.chatWithAI() returns Call<ApiResponse>
+                // and ApiResponse contains output?.choices?.getOrNull(0)?.text
                 val response = RetrofitClient.instance.chatWithAI(request).awaitResponse()
-                val responseJson = response.body()?.output?.choices?.getOrNull(0)?.text
+                val responseBody = response.body()
+
+                val responseJson = responseBody?.output?.choices?.getOrNull(0)?.text
                 Log.d("AI_GRADING_JSON", "Raw response: $responseJson")
 
                 if (!responseJson.isNullOrBlank()) {
-                    val actualJson = extractJson(responseJson)
-                    val result = gson.fromJson(actualJson, AIGradingResult::class.java)
-                    _gradingResult.postValue(result)
+                    // Use the existing extractJson function if needed to clean the response
+                    val actualJson = extractJson(responseJson) // Assume extractJson exists
+                    Log.d("AI_GRADING_JSON", "Extracted JSON: $actualJson")
+
+                    // Use a try-catch around parsing in case the AI returns malformed JSON
+                    try {
+                        val result = gson.fromJson(actualJson, AIGradingResult::class.java)
+                        _gradingResult.postValue(result)
+                    } catch (jsonException: Exception) {
+                        Log.e("AI_GRADING_JSON", "JSON Parsing error: ${jsonException.message}", jsonException)
+                        _errorMesssage.postValue("Lỗi xử lý kết quả chấm điểm từ AI: ${jsonException.message}")
+                    }
+
                 } else {
                     _errorMesssage.postValue("Không nhận được phản hồi chấm điểm từ AI.")
                 }
 
             } catch (e: Exception) {
+                Log.e("AI_GRADING", "Lỗi khi gọi API chấm điểm: ${e.message}", e)
                 _errorMesssage.postValue("Lỗi khi chấm điểm: ${e.message}")
-                e.printStackTrace()
             } finally {
                 _isLoading.postValue(false)
             }

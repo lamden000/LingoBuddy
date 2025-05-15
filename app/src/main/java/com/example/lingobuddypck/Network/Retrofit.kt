@@ -11,9 +11,9 @@ object RetrofitClient {
 
     val instance: TogetherApi by lazy {
         val client = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS) // Increase connection timeout
-            .readTimeout(30, TimeUnit.SECONDS)    // Increase read timeout
-            .writeTimeout(30, TimeUnit.SECONDS)   // Increase write timeout
+            .connectTimeout(60, TimeUnit.SECONDS) // Increase connection timeout
+            .readTimeout(60, TimeUnit.SECONDS)    // Increase read timeout
+            .writeTimeout(60, TimeUnit.SECONDS)   // Increase write timeout
             .build()
 
         Retrofit.Builder()

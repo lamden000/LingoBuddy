@@ -1,15 +1,21 @@
 package com.example.lingobuddypck.adapter
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.example.lingobuddypck.Network.TogetherAI.Message
 import com.example.lingobuddypck.R
+import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
+import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
 
-class ChatAdapter(private val messages: MutableList<Message>) :
+class ChatAdapter(private val messages: MutableList<Message>, private val context: Context,
+                  private val firebaseWordRepository: FirebaseWordRepository
+) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -28,7 +34,7 @@ class ChatAdapter(private val messages: MutableList<Message>) :
             UserMessageViewHolder(view)
         } else {
             val view = inflater.inflate(R.layout.item_message_other, parent, false)
-            AIMessageViewHolder(view)
+            AIMessageViewHolder(view,context,firebaseWordRepository)
         }
     }
 
@@ -63,12 +69,31 @@ class ChatAdapter(private val messages: MutableList<Message>) :
         }
     }
 
-    class AIMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    inner class AIMessageViewHolder(
+        itemView: View,
+        private val context: Context,
+        private val firebaseWordRepository: FirebaseWordRepository
+    ) : RecyclerView.ViewHolder(itemView) {
+
         private val textMessage: TextView = itemView.findViewById(R.id.textMessage)
         private val avatarImage: ImageView = itemView.findViewById(R.id.avatarAI)
+
         fun bind(message: Message) {
             textMessage.text = message.content
             avatarImage.setImageResource(R.drawable.avatar_ai)
+
+            textMessage.enableSelectableSaveAction(context) { selectedText, note ->
+                firebaseWordRepository.saveWord(
+                    word = selectedText,
+                    note = note,
+                    onSuccess = {
+                        Toast.makeText(context, "Đã lưu \"$selectedText\"!", Toast.LENGTH_SHORT).show()
+                    },
+                    onFailure = {
+                        Toast.makeText(context, "Lỗi khi lưu từ: ${it.message}", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
         }
     }
 }

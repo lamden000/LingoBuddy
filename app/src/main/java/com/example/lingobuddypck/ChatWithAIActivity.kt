@@ -20,6 +20,7 @@ import com.example.lingobuddypck.ViewModel.ChatViewModel
 import com.example.lingobuddypck.adapter.ChatAdapter
 import com.example.lingobuddypck.data.ChatItemDecoration
 import android.Manifest
+import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
 
 
 class ChatWithAIActivity : AppCompatActivity() {
@@ -47,7 +48,7 @@ class ChatWithAIActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.chatRecyclerView)
         micButton = findViewById(R.id.micButton)
 
-        adapter = ChatAdapter(mutableListOf())
+        adapter = ChatAdapter(mutableListOf(),this, FirebaseWordRepository())
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
         recyclerView.addItemDecoration(ChatItemDecoration(50))

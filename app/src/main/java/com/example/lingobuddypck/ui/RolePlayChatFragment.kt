@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.lingobuddypck.Factory.RolePlayViewModelFactory
 import com.example.lingobuddypck.R
+import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.ViewModel.RolePlayChatViewModel
 import com.example.lingobuddypck.adapter.ChatAdapter
 import com.example.lingobuddypck.data.ChatItemDecoration
@@ -43,7 +44,7 @@ class RolePlayChatFragment : Fragment() {
         val loadingSpinner = view.findViewById<ProgressBar>(R.id.loadingSpinner)
         val recyclerView = view.findViewById<RecyclerView>(R.id.chatRecyclerView)
 
-        adapter = ChatAdapter(mutableListOf())
+        adapter = ChatAdapter(mutableListOf(),requireContext(), FirebaseWordRepository())
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
         recyclerView.addItemDecoration(ChatItemDecoration(50))

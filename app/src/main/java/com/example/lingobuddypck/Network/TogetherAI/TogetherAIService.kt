@@ -16,9 +16,11 @@ interface TogetherApi {
 }
 
 data class ChatRequest(
-    val model: String ,
+    val model: String,
     val messages: List<Message>,
-    val max_tokens: Int = 1000
+    val max_tokens: Int = 2000,
+    val top_k: Int = 30,
+    val temperature: Double = 1.0
 )
 
 data class Message(
@@ -80,9 +82,13 @@ data class UserAnswer(
     val selectedOptionKey: String // "a", "b", "c", hoặc "d"
 )
 
+data class QuestionFeedback(
+    val status: String, // Expected "correct" or "incorrect"
+    val explanation: String? = null // This field is optional and will be null if not present (like for "correct" answers)
+)
 // Dùng để parse JSON kết quả chấm điểm từ AI
 data class AIGradingResult(
     val score: Int,
     val total_questions: Int,
-    val feedback: Map<String, String>? // Optional: {"q1": "correct", "q2": "incorrect"}
+    val feedback: Map<String, QuestionFeedback> // Optional: {"q1": "correct", "q2": "incorrect"}
 )

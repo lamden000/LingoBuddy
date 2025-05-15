@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.lingobuddypck.ViewModel.ImageLearningViewModel
+import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.adapter.ChatAdapter
 
 class ImageLearningActivity : AppCompatActivity() {
@@ -54,7 +55,7 @@ class ImageLearningActivity : AppCompatActivity() {
 
         // Initialize the RecyclerView and adapter
         recyclerView.layoutManager = LinearLayoutManager(this)
-        chatAdapter = ChatAdapter(mutableListOf())  // Initialize the adapter with an empty list
+        chatAdapter = ChatAdapter(mutableListOf(),this, FirebaseWordRepository())  // Initialize the adapter with an empty list
         recyclerView.adapter = chatAdapter
 
         // Handle image button click to select an image

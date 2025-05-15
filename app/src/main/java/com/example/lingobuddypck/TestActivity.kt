@@ -19,7 +19,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import com.example.lingobuddypck.Network.TogetherAI.QuestionData
 import com.example.lingobuddypck.Network.TogetherAI.UserAnswer
+import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.ViewModel.TestViewModel
+import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
+
 class TestActivity : AppCompatActivity() {
 
     private val viewModel: TestViewModel by viewModels()
@@ -31,6 +34,7 @@ class TestActivity : AppCompatActivity() {
     private lateinit var textViewResult: TextView
     private lateinit var scrollView: ScrollView
     private lateinit var customTopicEditTxt: EditText
+    private val wordRepository = FirebaseWordRepository()
 
     // Lưu trữ view theo ID câu hỏi
     private val questionViews = mutableMapOf<String, RadioGroup>()
@@ -51,13 +55,18 @@ class TestActivity : AppCompatActivity() {
         setupObservers()
 
         buttonStart.setOnClickListener {
-            val topic = if (customTopicEditTxt.text.toString().isBlank()) {
-                getRandomTopicFromAssets(this)
-            } else {
-                customTopicEditTxt.text.toString()
+            val isCustom:Boolean
+            val topic:String
+            if (customTopicEditTxt.text.toString().isBlank()) {
+                isCustom=false;
+                topic=getRandomTopicFromAssets(this)
+            }
+            else {
+                topic= customTopicEditTxt.text.toString()
+                isCustom=true;
             }
 
-            viewModel.fetchTest(topic)
+            viewModel.fetchTest(topic,isCustom)
             it.visibility = View.GONE
             textViewResult.visibility = View.GONE
             customTopicEditTxt.visibility = View.GONE
@@ -124,6 +133,7 @@ class TestActivity : AppCompatActivity() {
                 buttonSubmit.isEnabled = false
                 buttonStart.text = "Làm lại bài test"
                 buttonStart.visibility = View.VISIBLE
+                customTopicEditTxt.visibility=View.VISIBLE
 
                 // Hiển thị feedback
                 result.feedback?.forEach { (questionId, status) ->
@@ -135,12 +145,12 @@ class TestActivity : AppCompatActivity() {
 
                     feedbackTextView?.apply {
                         visibility = View.VISIBLE
-                        if (status == "correct") {
+                        if (status.status == "correct") {
                             setTextColor(Color.parseColor("#228B22"))
                             text = "✅ Trả lời đúng"
                         } else {
                             setTextColor(Color.parseColor("#B22222"))
-                            text = "❌ Trả lời sai. Đáp án đúng: $correctAnswer"
+                            text = "❌ Trả lời sai. Đáp án đúng: $correctAnswer. Giải thích: ${status.explanation}"
                         }
                     }
                 }
@@ -179,7 +189,14 @@ class TestActivity : AppCompatActivity() {
 
         tvQuestionNumber.text = "Câu ${index + 1}:"
         tvQuestionContent.text = questionData.question_text
-
+        tvQuestionContent.enableSelectableSaveAction(this) { selectedText, note ->
+            wordRepository.saveWord(
+                word = selectedText,
+                note = note,
+                onSuccess = { Toast.makeText(this, "Đã lưu vào từ điển của bạn.", Toast.LENGTH_SHORT).show() },
+                onFailure = { e -> Toast.makeText(this, "Lỗi khi lưu: ${e.message}", Toast.LENGTH_SHORT).show() }
+            )
+        }
         val sortedOptions = questionData.options.entries.sortedBy { it.key }
         sortedOptions.forEach { (optionKey, optionText) ->
             val radioButton = RadioButton(this)

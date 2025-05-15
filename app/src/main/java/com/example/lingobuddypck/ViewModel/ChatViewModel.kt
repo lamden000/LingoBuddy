@@ -49,6 +49,7 @@ class ChatViewModel : ViewModel() {
             override fun onResponse(call: Call<ChatResponse>, response: Response<ChatResponse>) {
                 isLoading.postValue(false)
                 val aiResponse = response.body()?.output?.choices?.getOrNull(0)?.text
+                if( aiResponse!=null)
                 if (!aiResponse.isNullOrEmpty()) {
                     val assistantMessage = Message("assistant", aiResponse)
                     fullHistory.add(assistantMessage)
@@ -62,7 +63,6 @@ class ChatViewModel : ViewModel() {
             }
         })
     }
-
     private fun getRecentHistory(): List<Message> {
         val recentMessages = if (fullHistory.size > maxHistorySize) {
             fullHistory.takeLast(maxHistorySize)

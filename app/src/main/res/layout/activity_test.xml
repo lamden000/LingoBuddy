@@ -57,17 +57,17 @@
 
     <TextView
         android:id="@+id/textViewTestResult"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="104dp"
+        android:layout_height="70dp"
         android:textSize="18sp"
         android:textStyle="bold"
         android:visibility="gone"
-        tools:text="Kết quả: 3/5"
-        app:layout_constraintTop_toBottomOf="@id/buttonSubmitTest"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintVertical_bias="0.2"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/buttonSubmitTest"
+        app:layout_constraintVertical_bias="0.2"
+        tools:text="Kết quả: 3/5" />
 
     <EditText
         android:id="@+id/editTextCustomTopic"

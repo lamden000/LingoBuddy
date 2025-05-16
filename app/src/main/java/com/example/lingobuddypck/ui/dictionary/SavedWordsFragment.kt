@@ -1,11 +1,11 @@
-package com.example.lingobuddypck
-
+package com.example.lingobuddypck.ui.dictionary
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
@@ -17,71 +17,77 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.lingobuddypck.NavigationActivity
 import com.example.lingobuddypck.Network.RetrofitClient
 import com.example.lingobuddypck.Network.TogetherAI.QuestionData
 import com.example.lingobuddypck.Network.TogetherAI.UserAnswer
+import com.example.lingobuddypck.R
 import com.example.lingobuddypck.ViewModel.Repository.AiQuizService
 import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
+import com.example.lingobuddypck.ViewModel.Repository.SavedWord
 import com.example.lingobuddypck.ViewModel.TestViewModel
+import com.example.lingobuddypck.adapter.SavedWordsAdapter
 import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
+import com.google.android.material.dialog.MaterialAlertDialogBuilder // Hoặc AlertDialog thông thường
 import com.google.gson.Gson
 
-class TestActivity : AppCompatActivity() {
+class SavedWordsFragment : Fragment() {
 
+    private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
+    private lateinit var textViewNoWords: TextView
+    private lateinit var wordsAdapter: SavedWordsAdapter
+    private lateinit var aiAvatar: ImageView
     private lateinit var questionsContainer: LinearLayout
-    private lateinit var buttonSubmit: Button // Used for Submit and Xác nhận
-    private lateinit var buttonStart: Button // Used for Start and Làm lại bài test
+    private lateinit var buttonSubmit: Button
+    private lateinit var buttonStart: Button
     private lateinit var textViewResult: TextView
     private lateinit var scrollView: ScrollView
-    private lateinit var customTopicEditTxt: EditText
     private lateinit var textViewLoadingHint: TextView
     private lateinit var textViewCountdown: TextView
-    private lateinit var aiAvatar: ImageView
+    private val questionViews = mutableMapOf<String, RadioGroup>()
+    private val feedbackViews = mutableMapOf<String, TextView>()
+    private var isShowingGradingResult = false
     private var countdownTimer: CountDownTimer? = null
-
 
     private val wordRepository = FirebaseWordRepository()
 
-    // Lưu trữ view theo ID câu hỏi
-    private val questionViews = mutableMapOf<String, RadioGroup>()
-    private val feedbackViews = mutableMapOf<String, TextView>()
-
-    // NEW: State variable to manage if we are in the "show result and confirm" state
-    private var isShowingGradingResult = false
-
     private val aiQuizService: AiQuizService by lazy {
-        // Example: Assuming Gson and RetrofitClient.instance are available statically or globally
         AiQuizService(Gson(), RetrofitClient.instance)
     }
 
-    private val viewModel: TestViewModel by viewModels {
-        // Use the Factory to create the ViewModel
-        TestViewModel.Factory(aiQuizService)
+    private val viewModel: SavedWordsViewModel by viewModels {
+        SavedWordsViewModel.Factory(aiQuizService)
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_test)
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val view = inflater.inflate(R.layout.fragment_saved_words, container, false)
 
-        aiAvatar=findViewById(R.id.aiAvatarLoading)
-        textViewCountdown = findViewById(R.id.textViewCountdown)
-        textViewLoadingHint=findViewById(R.id.textViewLoadingHint)
-        progressBar = findViewById(R.id.progressBarTest)
-        questionsContainer = findViewById(R.id.questionsContainerLayout)
-        buttonSubmit = findViewById(R.id.buttonSubmitTest)
-        buttonStart = findViewById(R.id.buttonStartTest)
-        textViewResult = findViewById(R.id.textViewTestResult)
-        scrollView = findViewById(R.id.scrollViewTest)
-        customTopicEditTxt = findViewById(R.id.editTextCustomTopic)
+        aiAvatar=view.findViewById(R.id.aiAvatarLoading)
+        textViewCountdown = view.findViewById(R.id.textViewCountdown)
+        textViewLoadingHint=view.findViewById(R.id.textViewLoadingHint)
+        questionsContainer = view.findViewById(R.id.questionsContainerLayout)
+        buttonSubmit = view.findViewById(R.id.buttonSubmitTest)
+        buttonStart = view.findViewById(R.id.buttonCreateQuiz)
+        textViewResult = view.findViewById(R.id.textViewTestResult)
+        scrollView = view.findViewById(R.id.scrollViewTest)
+        recyclerView = view.findViewById(R.id.recyclerViewSavedWords)
+        progressBar = view.findViewById(R.id.progressBarSavedWords)
+        textViewNoWords = view.findViewById(R.id.textViewNoWords)
 
         setupObservers()
 
         buttonStart.setOnClickListener {
-            // This listener is now ONLY for starting a *new* test (initial or after confirmation)
-            startNewTestFlow()
+            showConfirmationMakeTestDiaglog()
         }
 
         buttonSubmit.setOnClickListener {
@@ -97,22 +103,16 @@ class TestActivity : AppCompatActivity() {
 
         // Initial UI state
         resetUIForStart()
+
+        setupRecyclerView()
+        observeViewModel()
+
+        return view
     }
 
-    // Helper function for the "Start Test" button click
     private fun startNewTestFlow() {
-        val isCustom: Boolean
-        val topic: String
-        if (customTopicEditTxt.text.toString().isBlank()) {
-            isCustom = false
-            topic = getRandomTopicFromAssets(this) // Assume this function exists
-        } else {
-            topic = customTopicEditTxt.text.toString()
-            isCustom = true
-        }
-
-        viewModel.fetchTest(topic, isCustom)
-        resetUIForLoading() // Or handle in observer
+        viewModel.fetchTest()
+        resetUIForLoading()
     }
 
     // Helper function for the "Submit Answers" button click (when not confirming)
@@ -141,7 +141,7 @@ class TestActivity : AppCompatActivity() {
         if (allAnswered && userAnswers.size == viewModel.testQuestions.value?.size) {
             viewModel.submitAnswers(userAnswers)
         } else {
-            Toast.makeText(this, "Vui lòng trả lời tất cả các câu hỏi.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Vui lòng trả lời tất cả các câu hỏi.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -160,11 +160,11 @@ class TestActivity : AppCompatActivity() {
         buttonSubmit.visibility = View.GONE // Hide it until new questions load
 
         // Show the "Làm lại bài test" button
-        buttonStart.text = "Làm lại bài test" // Ensure text is correct
+        buttonStart.text = "Ôn tập" // Ensure text is correct
         buttonStart.visibility = View.VISIBLE
-        scrollView.alpha= 0.1F
-        customTopicEditTxt.visibility = View.VISIBLE // Show topic edit again
-
+        scrollView.visibility=View.GONE
+        recyclerView.visibility=View.VISIBLE
+        (activity as? NavigationActivity)?.showBottomNavigationBar()
         // Clear the grading result in the ViewModel
         viewModel.clearGradingResult()
         // Note: Clearing gradingResult might re-trigger the observer briefly,
@@ -173,7 +173,7 @@ class TestActivity : AppCompatActivity() {
 
 
     private fun setupObservers() {
-        viewModel.isLoading.observe(this) { isLoading ->
+        viewModel.isLoading.observe(requireActivity()) { isLoading ->
             progressBar.isVisible = isLoading
             textViewLoadingHint.isVisible = isLoading
             textViewCountdown.isVisible = isLoading
@@ -213,14 +213,13 @@ class TestActivity : AppCompatActivity() {
                     buttonSubmit.visibility = View.VISIBLE
                     buttonSubmit.text = "Nộp bài"
                     buttonStart.visibility = View.GONE
-                    customTopicEditTxt.visibility=View.GONE
                 } else if (viewModel.gradingResult.value == null && viewModel.errorMessage.value != null) {
                     resetUIForStart()
                 }
             }
         }
 
-        viewModel.testQuestions.observe(this) { questions ->
+        viewModel.testQuestions.observe(requireActivity()) { questions ->
             if (!isShowingGradingResult) {
                 questionsContainer.removeAllViews()
                 questionViews.clear()
@@ -228,7 +227,6 @@ class TestActivity : AppCompatActivity() {
 
                 if (questions != null && questions.isNotEmpty()) {
                     scrollView.visibility = View.VISIBLE
-                    customTopicEditTxt.visibility = View.GONE
 
                     questions.forEachIndexed { index, questionData ->
                         addQuestionToLayout(index, questionData)
@@ -253,7 +251,7 @@ class TestActivity : AppCompatActivity() {
         }
 
         // UPDATED: Grading result observer to handle the "Xác nhận" state
-        viewModel.gradingResult.observe(this) { result ->
+        viewModel.gradingResult.observe(requireActivity()) { result ->
             if (result != null) {
                 isShowingGradingResult = true // Enter the result state
 
@@ -301,9 +299,9 @@ class TestActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.errorMessage.observe(this) { message ->
+        viewModel.errorMessage.observe(requireActivity()) { message ->
             message?.let {
-                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+                Toast.makeText(requireActivity(), it, Toast.LENGTH_LONG).show()
                 viewModel.clearErrorMessage() // Assume you have this to consume the message
                 // After an error and loading stops, return to the start state
                 if (viewModel.isLoading.value == false) {
@@ -325,10 +323,8 @@ class TestActivity : AppCompatActivity() {
         textViewCountdown.visibility = View.GONE // Hide countdown
         aiAvatar.visibility = View.GONE // Hide AI avatar
         scrollView.alpha= 1F
-        buttonStart.text = "Bắt đầu làm bài" // Reset start button text
+        buttonStart.text = "Ôn tập" // Reset start button text
         buttonStart.visibility = View.VISIBLE
-        customTopicEditTxt.visibility = View.VISIBLE // Show topic input
-        customTopicEditTxt.text.clear() // Clear previous topic
     }
 
     // Helper function to reset UI to the loading state (partially redundant with observer, but good for clarity)
@@ -336,24 +332,15 @@ class TestActivity : AppCompatActivity() {
         scrollView.visibility = View.VISIBLE // Keep scrollview visible but dim it
         buttonSubmit.visibility = View.GONE // Hide submit while loading
         buttonStart.visibility = View.GONE // Hide start while loading
-        customTopicEditTxt.visibility = View.GONE // Hide topic input while loading
         textViewResult.visibility = View.GONE // Hide result while loading
         feedbackViews.values.forEach { it.visibility = View.GONE } // Hide feedback while loading
+        recyclerView.visibility=View.GONE
+        (activity as? NavigationActivity)?.hideBottomNavigationBar()
     }
 
-
-    fun getRandomTopicFromAssets(context: Context): String {
-
-        val inputStream = context.assets.open("topics.txt")
-
-        val topics = inputStream.bufferedReader().useLines { it.toList() }
-
-        return topics.random()
-
-    }
 
     private fun addQuestionToLayout(index: Int, questionData: QuestionData) { // Changed QuestionData to TestQuestion
-        val inflater = LayoutInflater.from(this)
+        val inflater = LayoutInflater.from(requireContext())
         val questionView = inflater.inflate(R.layout.item_test_question, questionsContainer, false)
 
         val tvQuestionNumber = questionView.findViewById<TextView>(R.id.textViewQuestionNumber)
@@ -364,18 +351,17 @@ class TestActivity : AppCompatActivity() {
         tvQuestionNumber.text = "Câu ${index + 1}:"
         tvQuestionContent.text = questionData.question_text
         // Assuming enableSelectableSaveAction is an extension function you have
-        tvQuestionContent.enableSelectableSaveAction(this) { selectedText, note ->
+        tvQuestionContent.enableSelectableSaveAction(requireContext()) { selectedText, note ->
             wordRepository.saveWord(
                 word = selectedText,
                 note = note,
-                onSuccess = { Toast.makeText(this, "Đã lưu vào từ điển của bạn.", Toast.LENGTH_SHORT).show() },
-                onFailure = { e -> Toast.makeText(this, "Lỗi khi lưu: ${e.message}", Toast.LENGTH_SHORT).show() }
+                onSuccess = { Toast.makeText(requireContext(), "Đã lưu vào từ điển của bạn.", Toast.LENGTH_SHORT).show() },
             )
         }
 
         val sortedOptions = questionData.options.entries.sortedBy { it.key }
         sortedOptions.forEach { (optionKey, optionText) ->
-            val radioButton = RadioButton(this)
+            val radioButton = RadioButton(requireContext())
             radioButton.text = "${optionKey.uppercase()}. $optionText"
             radioButton.tag = optionKey // Store the option key
             radioButton.id = View.generateViewId() // Generate a unique ID
@@ -386,4 +372,102 @@ class TestActivity : AppCompatActivity() {
         questionViews[questionData.id] = rgOptions // Store RadioGroup by question ID
         feedbackViews[questionData.id] = tvFeedback // Store Feedback TextView by question ID
     }
+
+    private fun setupRecyclerView() {
+        wordsAdapter = SavedWordsAdapter(
+            onEditClick = { savedWord ->
+                showEditWordDialog(savedWord)
+            },
+            onDeleteClick = { savedWord ->
+                showDeleteConfirmationDialog(savedWord)
+            }
+        )
+        recyclerView.apply {
+            adapter = wordsAdapter
+            layoutManager = LinearLayoutManager(requireContext())
+        }
+    }
+
+    private fun observeViewModel() {
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        }
+
+        viewModel.savedWords.observe(viewLifecycleOwner) { words ->
+            if (words.isNullOrEmpty()) {
+                textViewNoWords.visibility = View.VISIBLE
+                recyclerView.visibility = View.GONE
+            } else {
+                textViewNoWords.visibility = View.GONE
+                recyclerView.visibility = View.VISIBLE
+                wordsAdapter.submitList(words)
+            }
+        }
+
+        viewModel.error.observe(viewLifecycleOwner) { event ->
+            event.getContentIfNotHandled()?.let { errorMessage ->
+                if (errorMessage != null) {
+                    Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+        viewModel.operationResult.observe(viewLifecycleOwner) { event ->
+            event.getContentIfNotHandled()?.let { message ->
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun showConfirmationMakeTestDiaglog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Bắt đầu bài kiểm tra")
+            .setMessage("Bạn đã sẵn sàng làm bài kiểm tra chưa?")
+            .setPositiveButton("Rồi") { dialog, _ ->
+                startNewTestFlow()
+                dialog.dismiss()
+            }
+            .setNegativeButton("Chưa") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun showDeleteConfirmationDialog(savedWord: SavedWord) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Xóa từ")
+            .setMessage("Bạn chắc chắn muốn xóa từ này chứ '${savedWord.word}'?")
+            .setNegativeButton("Hủy") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setPositiveButton("Xóa") { dialog, _ ->
+                viewModel.deleteWord(savedWord.id)
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun showEditWordDialog(savedWord: SavedWord) {
+        // Tạo layout cho dialog (ví dụ: dialog_edit_word.xml)
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_edit_word, null)
+        val editTextWord = dialogView.findViewById<EditText>(R.id.editTextDialogWord) // Cần có ID này trong dialog_edit_word.xml
+        val editTextNote = dialogView.findViewById<EditText>(R.id.editTextDialogNote) // Cần có ID này trong dialog_edit_word.xml
+
+        editTextWord.setText(savedWord.word)
+        editTextNote.setText(savedWord.note)
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Edit Word")
+            .setView(dialogView)
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setPositiveButton("Save") { dialog, _ ->
+                val updatedWord = editTextWord.text.toString().trim()
+                val updatedNote = editTextNote.text.toString().trim()
+                viewModel.updateWord(savedWord.id, updatedWord, updatedNote)
+                dialog.dismiss()
+            }
+            .show()
+    }
+
 }

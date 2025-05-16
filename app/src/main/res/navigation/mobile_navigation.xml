@@ -12,7 +12,7 @@
 
     <fragment
         android:id="@+id/navigation_saved_words"
-        android:name="com.example.lingobuddypck.ui.dashboard.SavedWordsFragment"
+        android:name="com.example.lingobuddypck.ui.dictionary.SavedWordsFragment"
         tools:layout="@layout/fragment_saved_words" />
 
     <fragment

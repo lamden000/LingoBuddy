@@ -1,5 +1,7 @@
 package com.example.lingobuddypck.Network.TogetherAI
 import android.net.Uri
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.Headers
@@ -69,12 +71,13 @@ data class AIQuestionResponse(
     val questions: List<QuestionData>
 )
 
+@Parcelize // <-- Make sure this annotation is directly above the class
 data class QuestionData(
     val id: String,
     val question_text: String,
-    val options: Map<String, String>, // {"a": "Text A", "b": "Text B", ...}
-    val correct_answer: String // "a", "b", "c", hoặc "d"
-)
+    val options: Map<String, String>, // Standard types like String and Map<String, String> are usually fine with Parcelize
+    val correct_answer: String
+) : Parcelable
 
 // Dùng để lưu câu trả lời của người dùng
 data class UserAnswer(

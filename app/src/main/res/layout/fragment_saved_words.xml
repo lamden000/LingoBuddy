@@ -5,6 +5,96 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <ScrollView
+        android:id="@+id/scrollViewTest"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+        <LinearLayout
+            android:id="@+id/questionsContainerLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+        </LinearLayout>
+    </ScrollView>
+
+    <Button
+        android:id="@+id/buttonSubmitTest"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Nộp Bài"
+        android:layout_margin="16dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <TextView
+        android:id="@+id/textViewTestResult"
+        android:layout_width="184dp"
+        android:layout_height="638dp"
+        android:textAlignment="center"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Kết quả: 3/5" />
+
+    <TextView
+        android:id="@+id/textViewLoadingHint"
+        android:layout_width="369dp"
+        android:layout_height="75dp"
+        android:layout_gravity="center"
+        android:text="🧠 Đang suy nghĩ... hy vọng không phải quá lâu!"
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        android:textColor="#888888"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/recyclerViewSavedWords"
+        app:layout_constraintVertical_bias="0.639" />
+
+    <TextView
+        android:id="@+id/textViewCountdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Thời gian còn lại: 60 giây"
+        android:textAppearance="@style/TextAppearance.AppCompat.Small"
+        android:textColor="#888888"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.459"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.696" />
+
+
+    <ImageView
+        android:id="@+id/aiAvatarLoading"
+        android:layout_width="261dp"
+        android:layout_height="262dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.406"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.381"
+        app:srcCompat="@drawable/avatar_ai" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewSavedWords"
         android:layout_width="match_parent"
@@ -15,12 +105,13 @@
         tools:listitem="@layout/item_saved_word" />
 
     <Button
-        android:id="@+id/button"
+        android:id="@+id/buttonCreateQuiz"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Ôn tập"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ProgressBar
         android:id="@+id/progressBarSavedWords"

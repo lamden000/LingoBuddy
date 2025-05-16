@@ -231,6 +231,13 @@ class SavedWordsFragment : Fragment() {
                     questions.forEachIndexed { index, questionData ->
                         addQuestionToLayout(index, questionData)
                     }
+                    val bottomSpacer = View(requireActivity()).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            resources.getDimensionPixelSize(R.dimen.scroll_bottom_padding) // Hoặc 100.dp.toPx() nếu bạn có extension
+                        )
+                    }
+                    questionsContainer.addView(bottomSpacer)
                     if (viewModel.isLoading.value == false) {
                         buttonSubmit.visibility = View.VISIBLE
                         buttonSubmit.text = "Nộp bài"

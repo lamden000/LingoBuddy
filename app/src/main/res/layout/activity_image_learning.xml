@@ -8,21 +8,22 @@
       android:id="@+id/recyclerView"
       android:layout_width="match_parent"
       android:layout_height="0dp"
-      android:layout_weight="1" />
+      android:layout_weight="1"
+      android:background="@drawable/chat_background" />
 
   <!-- EditText for typing message -->
   <EditText
       android:id="@+id/inputMessage"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:hint="Type a message" />
+      android:hint="Nhâp tin nhắn..." />
 
   <!-- Button to select an image -->
   <Button
       android:id="@+id/selectImageButton"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:text="Select Image" />
+      android:text="Chọn ảnh" />
 
   <!-- ImageView to preview the selected image -->
   <ImageView
@@ -38,6 +39,6 @@
       android:id="@+id/sendButton"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:text="Send" />
+      android:text="Gửi" />
 
 </LinearLayout>

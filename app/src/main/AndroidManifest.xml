@@ -31,8 +31,7 @@
             android:exported="false" />
         <activity
             android:name=".NavigationActivity"
-            android:exported="false"
-            android:label="@string/title_activity_navigation" />
+            android:exported="false" />
         <activity
             android:name=".PronunciationActivity"
             android:exported="false" />

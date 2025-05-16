@@ -19,7 +19,6 @@ class NavigationActivity : AppCompatActivity() {
 
         binding = ActivityNavigationBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         val navView: BottomNavigationView = binding.navView
 
         val navController = findNavController(R.id.nav_host_fragment_activity_navigation)
@@ -27,9 +26,10 @@ class NavigationActivity : AppCompatActivity() {
         // menu should be considered as top level destinations.
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
+        supportActionBar?.hide() // Nếu dùng AppCompatActivity
         val appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications
+                R.id.navigation_home, R.id.navigation_saved_words, R.id.navigation_notifications
             )
         )
         setupActionBarWithNavController(navController, appBarConfiguration)

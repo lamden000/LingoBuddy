@@ -20,7 +20,7 @@ data class ChatRequest(
     val messages: List<Message>,
     val max_tokens: Int = 2000,
     val top_k: Int = 30,
-    val temperature: Double = 1.0
+    val temperature: Double = 1.3
 )
 
 data class Message(

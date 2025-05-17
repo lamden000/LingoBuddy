@@ -78,6 +78,16 @@ class RolePlayChatViewModel(
     }
 
     private fun buildSystemPrompt(aiRole: String,userRole:String, context: String): String {
-        return "Bạn sẽ đóng vai trò là '$aiRole' trong ngữ cảnh '$context', người dùng là '$userRole'. Hãy phản hồi giống như một người thật đang đóng vai '$aiRole' bằng tiếng anh. Sau đó hãy giúp họ sửa lỗi nếu có .Cấu trúc: Phản hồi tiếng anh (Sửa lỗi bằng tiếng việt)"
+        return "You are playing the role of \"$aiRole\" in the context of \"$context\". The user is acting as \"$userRole\".\n" +
+                "\n" +
+                "Respond naturally, in fluent English, as if you are a real person playing \"$aiRole\".\n" +
+                "\n" +
+                "Encourage the user to continue by adding relevant questions or context.\n" +
+                "\n" +
+                "If the user's English has any errors, provide corrections at the end.\n" +
+                "\n" +
+                "Format your response as:\n" +
+                "1. English reply (in character)\n" +
+                "2. Corrections (in Vietnamese, if any)"
     }
 }

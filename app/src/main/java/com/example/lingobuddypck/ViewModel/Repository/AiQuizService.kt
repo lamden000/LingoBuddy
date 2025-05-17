@@ -62,6 +62,7 @@ class AiQuizService(
             - All correct answers strictly follow modern English grammar.
             - Tense usage, conditional structures, and logical context must be accurate.
             - Absolutely no incorrect answers should be marked as correct.
+            -The correct answers are randomly distributed into a,b,c,d
 
             Return the result in **pure JSON format only**, without any explanations or extra text. Follow this structure exactly:
             ```json

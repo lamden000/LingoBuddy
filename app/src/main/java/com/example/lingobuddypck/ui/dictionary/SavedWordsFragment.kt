@@ -32,6 +32,7 @@ import com.example.lingobuddypck.ViewModel.Repository.AiQuizService
 import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.ViewModel.Repository.SavedWord
 import com.example.lingobuddypck.ViewModel.TestViewModel
+import com.example.lingobuddypck.adapter.SavedWordListItem
 import com.example.lingobuddypck.adapter.SavedWordsAdapter
 import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
 import com.google.android.material.dialog.MaterialAlertDialogBuilder // Hoặc AlertDialog thông thường
@@ -173,7 +174,7 @@ class SavedWordsFragment : Fragment() {
 
 
     private fun setupObservers() {
-        viewModel.isLoading.observe(requireActivity()) { isLoading ->
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
             progressBar.isVisible = isLoading
             textViewLoadingHint.isVisible = isLoading
             textViewCountdown.isVisible = isLoading
@@ -219,7 +220,7 @@ class SavedWordsFragment : Fragment() {
             }
         }
 
-        viewModel.testQuestions.observe(requireActivity()) { questions ->
+        viewModel.testQuestions.observe(viewLifecycleOwner) { questions ->
             if (!isShowingGradingResult) {
                 questionsContainer.removeAllViews()
                 questionViews.clear()
@@ -258,7 +259,7 @@ class SavedWordsFragment : Fragment() {
         }
 
         // UPDATED: Grading result observer to handle the "Xác nhận" state
-        viewModel.gradingResult.observe(requireActivity()) { result ->
+        viewModel.gradingResult.observe(viewLifecycleOwner) { result ->
             if (result != null) {
                 isShowingGradingResult = true // Enter the result state
 
@@ -306,7 +307,7 @@ class SavedWordsFragment : Fragment() {
             }
         }
 
-        viewModel.errorMessage.observe(requireActivity()) { message ->
+        viewModel.errorMessage.observe(viewLifecycleOwner) { message ->
             message?.let {
                 Toast.makeText(requireActivity(), it, Toast.LENGTH_LONG).show()
                 viewModel.clearErrorMessage() // Assume you have this to consume the message
@@ -407,7 +408,8 @@ class SavedWordsFragment : Fragment() {
             } else {
                 textViewNoWords.visibility = View.GONE
                 recyclerView.visibility = View.VISIBLE
-                wordsAdapter.submitList(words)
+                val grouped = buildGroupedList(words)
+                wordsAdapter.submitList(grouped)
             }
         }
 
@@ -423,6 +425,15 @@ class SavedWordsFragment : Fragment() {
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    fun buildGroupedList(words: List<SavedWord>): List<SavedWordListItem> {
+        return words
+            .sortedBy { it.word.lowercase() }
+            .groupBy { it.word.first().uppercaseChar() }
+            .flatMap { (char, items) ->
+                listOf(SavedWordListItem.Header(char)) + items.map { SavedWordListItem.WordItem(it) }
+            }
     }
 
     private fun showConfirmationMakeTestDiaglog() {

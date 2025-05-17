@@ -11,22 +11,73 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.lingobuddypck.R
 import com.example.lingobuddypck.ViewModel.Repository.SavedWord
 
+sealed class SavedWordListItem {
+    data class Header(val letter: Char) : SavedWordListItem()
+    data class WordItem(val word: SavedWord) : SavedWordListItem()
+}
+
+class SavedWordListItemDiffCallback : DiffUtil.ItemCallback<SavedWordListItem>() {
+    override fun areItemsTheSame(
+        oldItem: SavedWordListItem,
+        newItem: SavedWordListItem
+    ): Boolean {
+        return oldItem == newItem
+    }
+
+    override fun areContentsTheSame(
+        oldItem: SavedWordListItem,
+        newItem: SavedWordListItem
+    ): Boolean {
+        return oldItem == newItem
+    }
+}
+
+class HeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    private val textViewHeader: TextView = itemView.findViewById(R.id.textViewHeader)
+    fun bind(header: SavedWordListItem.Header) {
+        textViewHeader.text = header.letter.toString()
+    }
+}
+
 class SavedWordsAdapter(
     private val onEditClick: (SavedWord) -> Unit,
     private val onDeleteClick: (SavedWord) -> Unit
-) : ListAdapter<SavedWord, SavedWordsAdapter.SavedWordViewHolder>(SavedWordDiffCallback()) {
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SavedWordViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_saved_word, parent, false) // Sử dụng layout item đã tạo
-        return SavedWordViewHolder(view)
+) : ListAdapter<SavedWordListItem, RecyclerView.ViewHolder>(SavedWordListItemDiffCallback()) {
+    companion object {
+        private const val TYPE_HEADER = 0
+        private const val TYPE_ITEM = 1
+    }
+    override fun getItemViewType(position: Int): Int {
+        return when (getItem(position)) {
+            is SavedWordListItem.Header -> TYPE_HEADER
+            is SavedWordListItem.WordItem -> TYPE_ITEM
+        }
+    }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return when (viewType) {
+            TYPE_HEADER -> {
+                val view = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.item_saved_word_header, parent, false)
+                HeaderViewHolder(view)
+            }
+            else -> {
+                val view = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.item_saved_word, parent, false)
+                SavedWordViewHolder(view)
+            }
+        }
     }
 
-    override fun onBindViewHolder(holder: SavedWordViewHolder, position: Int) {
-        val word = getItem(position)
-        holder.bind(word, onEditClick, onDeleteClick)
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val item = getItem(position)) {
+            is SavedWordListItem.Header -> (holder as HeaderViewHolder).bind(item)
+            is SavedWordListItem.WordItem -> (holder as SavedWordViewHolder).bind(
+                item.word,
+                onEditClick,
+                onDeleteClick
+            )
+        }
     }
-
     class SavedWordViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textViewWord: TextView = itemView.findViewById(R.id.textViewItemWord)
         private val textViewNote: TextView = itemView.findViewById(R.id.textViewItemNote)

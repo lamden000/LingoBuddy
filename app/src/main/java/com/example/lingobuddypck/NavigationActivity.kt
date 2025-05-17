@@ -37,7 +37,7 @@ class NavigationActivity : AppCompatActivity() {
         // menu should be considered as top level destinations.
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
-        supportActionBar?.hide() // Nếu dùng AppCompatActivity
+        supportActionBar?.hide()
         val appBarConfiguration = AppBarConfiguration(
             setOf(
                 R.id.navigation_home, R.id.navigation_saved_words, R.id.navigation_notifications

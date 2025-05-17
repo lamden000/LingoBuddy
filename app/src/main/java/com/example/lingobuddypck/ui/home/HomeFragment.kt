@@ -35,10 +35,10 @@ class HomeFragment : Fragment() {
 
         val featureList = listOf(
             Feature("Chat với AI Gia Sư", R.drawable.chat_ai),
-            Feature("Luyện phát âm bằng giọng nói", R.drawable.speech_practice),
-            Feature("Nhận diện & Học từ vựng từ hình ảnh", R.drawable.image_recognition),
-            Feature("Học từ vựng & Ngữ pháp qua đoạn văn AI tạo", R.drawable.grammar_learning),
-            Feature("Nhập vai với AI", R.drawable.role_playing)
+            Feature("Luyện phát âm bằng giọng nói", R.drawable.ic_pronounciation),
+            Feature("Nhận diện & Học từ vựng từ hình ảnh", R.drawable.ic_camera),
+            Feature("Học từ vựng & Ngữ pháp qua đoạn văn AI tạo", R.drawable.ic_test),
+            Feature("Nhập vai với AI", R.drawable.ic_role_play)
         )
 
         val featureActivities = mapOf(

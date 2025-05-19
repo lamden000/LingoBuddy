@@ -43,6 +43,7 @@ class NavigationActivity : AppCompatActivity() {
                 R.id.navigation_home, R.id.navigation_saved_words, R.id.navigation_notifications
             )
         )
+        bottomNav.itemIconTintList = null
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
     }

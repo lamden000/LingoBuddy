@@ -7,16 +7,93 @@
     tools:context=".ui.notifications.NotificationsFragment">
 
     <TextView
-        android:id="@+id/text_notifications"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        android:id="@+id/textViewEmail"
+        android:layout_width="404dp"
+        android:layout_height="31dp"
         android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
+        android:layout_weight="1"
+        android:text="Example@gmail.com"
         android:textAlignment="center"
-        android:textSize="20sp"
+        android:textSize="18dp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/imageView2" />
+
+    <TextView
+        android:id="@+id/textViewLevel"
+        android:layout_width="408dp"
+        android:layout_height="29dp"
+        android:layout_weight="1"
+        android:text="Level: Fresher"
+        android:textAlignment="center"
+        android:textSize="18dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewEmail"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <Button
+        android:id="@+id/buttonLogout"
+        android:layout_width="196dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="12dp"
+        android:drawableEnd="@drawable/ic_close"
+        android:text="Đăng xuất"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonChangePassword" />
+
+    <Button
+        android:id="@+id/buttonPersonalize"
+        android:layout_width="196dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="20dp"
+        android:drawableEnd="@drawable/ic_personalize"
+        android:text="Cá nhân hóa AI"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewLevel" />
+
+    <Button
+        android:id="@+id/buttonPersonalInfo"
+        android:layout_width="196dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="84dp"
+        android:drawableEnd="@drawable/baseline_boy_24"
+        android:text="Thông tin của bạn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewLevel" />
+
+    <Button
+        android:id="@+id/buttonChangePassword"
+        android:layout_width="196dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="12dp"
+        android:drawableEnd="@drawable/ic_change"
+        android:text="Đổi mật khẩu"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonPersonalInfo" />
+
+    <ImageView
+        android:id="@+id/imageView2"
+        android:layout_width="259dp"
+        android:layout_height="249dp"
+        android:layout_marginTop="48dp"
+        android:src="@drawable/avatar_ai"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.368"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

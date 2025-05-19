@@ -1,20 +1,20 @@
-package com.example.lingobuddypck.ViewModel.Repository
-
-import com.example.lingobuddypck.Network.RetrofitClient
+package com.example.lingobuddypck.Factory.QuizService
+import android.content.Context
 import com.example.lingobuddypck.Network.TogetherAI.AIGradingResult
 import com.example.lingobuddypck.Network.TogetherAI.AIQuestionResponse
 import com.example.lingobuddypck.Network.TogetherAI.ChatRequest
 import com.example.lingobuddypck.Network.TogetherAI.Message
+import com.example.lingobuddypck.Network.TogetherAI.PassageQuizData
 import com.example.lingobuddypck.Network.TogetherAI.QuestionData
 import com.example.lingobuddypck.Network.TogetherAI.TogetherApi
 import com.example.lingobuddypck.Network.TogetherAI.UserAnswer
 import com.google.gson.Gson
-import retrofit2.awaitResponse // Assuming you use this extension
+import retrofit2.awaitResponse
+import java.io.IOException
 
 class AiQuizService(
     private val gson: Gson,
     private val retrofitClient: TogetherApi
-    // Assuming RetrofitClient is a class/interface with chatWithAI method
 ) {
 
     // System messages (can be internal to the service)
@@ -62,7 +62,7 @@ class AiQuizService(
             - All correct answers strictly follow modern English grammar.
             - Tense usage, conditional structures, and logical context must be accurate.
             - Absolutely no incorrect answers should be marked as correct.
-            -The correct answers are randomly distributed into a,b,c,d
+            - The correct answers are randomly distributed into a,b,c,d
 
             Return the result in **pure JSON format only**, without any explanations or extra text. Follow this structure exactly:
             ```json
@@ -120,6 +120,82 @@ class AiQuizService(
             throw Exception("Không nhận được phản hồi từ AI hoặc phản hồi rỗng khi tạo bài test.")
         }
     }
+
+    suspend fun generatePassageQuiz(topic: String, isCustom: Boolean): PassageQuizData {
+        val prompt = """
+        Please generate one English language learning passage (around 150–200 words) on the topic "$topic".
+
+        The passage should have **at least 5 blanks**, each blank representing a missing word or phrase.
+        The missing parts should be **diverse**, including grammar points, vocabulary, and idiomatic expressions.
+
+        For each blank, provide:
+        - The full sentence with the blank (e.g., "He ___ to the store.")
+        - Four multiple-choice options labeled a, b, c, d
+        - The correct answer key (a, b, c, or d)
+
+        Make sure:
+        - All options are plausible and grammatically valid, except only one is contextually correct.
+        - The correct answers are **accurate and randomized among a/b/c/d**
+        - The passage should still be understandable even with the blanks.
+
+        Return the result in **pure JSON format only**, structured as below:
+        ```json
+        {
+          "passage": "Full passage text here, with numbered blanks like (1), (2), ...",
+          "questions": [
+            {
+              "id": "blank1",
+              "sentence": "He (1) ___ to the store every morning.",
+              "options": {
+                "a": "go",
+                "b": "goes",
+                "c": "went",
+                "d": "gone"
+              },
+              "correct_answer": "b"
+            },
+            {
+              "id": "blank2",
+              "sentence": "...",
+              "options": { "a": "...", "b": "...", "c": "...", "d": "..." },
+              "correct_answer": "c"
+            }
+            // at least 5 items
+          ]
+        }
+        ```
+    """.trimIndent()
+
+        val messages = listOf(systemMessageForTestGeneration, Message("user", prompt))
+        val model = if (isCustom) "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free" else "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        val request = ChatRequest(model, messages = messages)
+
+        val response = retrofitClient.chatWithAI(request).awaitResponse()
+
+        if (!response.isSuccessful) {
+            throw Exception("API call failed with code ${response.code()}")
+        }
+
+        val responseBody = response.body()
+        val responseJson = responseBody?.output?.choices?.getOrNull(0)?.text
+
+        if (!responseJson.isNullOrBlank()) {
+            val actualJson = extractJson(responseJson)
+            try {
+                val aiResponse = gson.fromJson(actualJson, PassageQuizData::class.java)
+                if (aiResponse.questions.size >= 5) {
+                    return aiResponse
+                } else {
+                    throw Exception("AI không trả về đủ số câu hỏi cần thiết trong passage.")
+                }
+            } catch (jsonException: Exception) {
+                throw Exception("Lỗi xử lý JSON trong bài passage: ${jsonException.message}", jsonException)
+            }
+        } else {
+            throw Exception("Không nhận được phản hồi hoặc phản hồi rỗng khi tạo passage quiz.")
+        }
+    }
+
 
     suspend fun gradeQuiz(questions: List<QuestionData>, userAnswers: List<UserAnswer>): AIGradingResult {
         if (questions.isEmpty()) {

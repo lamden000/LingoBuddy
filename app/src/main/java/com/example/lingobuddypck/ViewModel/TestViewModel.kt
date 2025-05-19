@@ -10,28 +10,30 @@ import com.example.lingobuddypck.Network.TogetherAI.QuestionData
 import com.example.lingobuddypck.Network.TogetherAI.UserAnswer
 import kotlinx.coroutines.launch
 
-import androidx.lifecycle.*
-import androidx.lifecycle.ViewModelProvider // Needed for Factory
-import com.example.lingobuddypck.ViewModel.Repository.AiQuizService
+import androidx.lifecycle.ViewModelProvider
+import com.example.lingobuddypck.Factory.QuizService.AiQuizService
+import com.example.lingobuddypck.Factory.QuizService.QuizViewModel
 
 
 class TestViewModel(
     private val aiQuizService: AiQuizService
-) : ViewModel() {
+) : ViewModel(), QuizViewModel {
 
     // LiveData remain to hold the UI state
     private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    override val isLoading: LiveData<Boolean> = _isLoading
+
+    private val _isFetchingTest = MutableLiveData<Boolean>()
+    override val isFetchingTest: LiveData<Boolean> = _isFetchingTest
 
     private val _testQuestions = MutableLiveData<List<QuestionData>?>()
-    val testQuestions: LiveData<List<QuestionData>?> = _testQuestions
+    override val testQuestions: LiveData<List<QuestionData>?> = _testQuestions
 
     private val _gradingResult = MutableLiveData<AIGradingResult?>()
-    val gradingResult: LiveData<AIGradingResult?> = _gradingResult
+    override val gradingResult: LiveData<AIGradingResult?> = _gradingResult
 
     private val _errorMesssage = MutableLiveData<String?>()
-    val errorMessage: LiveData<String?> = _errorMesssage
-
+    override val errorMessage: LiveData<String?> = _errorMesssage
     class Factory(
         private val aiQuizService: AiQuizService
         // Add other dependencies needed by TestViewModel constructor here
@@ -45,18 +47,17 @@ class TestViewModel(
         }
     }
 
-    fun fetchTest(topic: String, isCustom: Boolean) {
+   override fun fetchTest(topic: String, isCustom: Boolean) {
         // ViewModel updates its own loading state
         _isLoading.value = true
         _testQuestions.value = null // Clear previous state
         _gradingResult.value = null
         _errorMesssage.value = null
+       _isFetchingTest.value=true
 
         viewModelScope.launch {
             try {
-                // Call the service function
                 val questions = aiQuizService.generateQuiz(topic, isCustom)
-                // Update ViewModel LiveData with the result
                 _testQuestions.postValue(questions)
             } catch (e: Exception) {
                 // Handle exceptions thrown by the service
@@ -65,11 +66,12 @@ class TestViewModel(
             } finally {
                 // ViewModel updates its own loading state
                 _isLoading.postValue(false)
+                _isFetchingTest.postValue(false)
             }
         }
     }
 
-    fun submitAnswers(userAnswers: List<UserAnswer>) {
+    override fun submitAnswers(userAnswers: List<UserAnswer>) {
         val currentQuestions = _testQuestions.value
         if (currentQuestions == null || currentQuestions.isEmpty()) {
             _errorMesssage.value = "Không có bài test để chấm điểm."
@@ -99,12 +101,15 @@ class TestViewModel(
     }
 
     // These remain as they manage ViewModel-specific state
-    fun clearGradingResult() {
+    override fun clearGradingResult() {
         _gradingResult.value = null
     }
 
-    fun clearErrorMessage() {
+    override fun clearErrorMessage() {
         _errorMesssage.value = null
     }
 
+    override fun clearQuestions() {
+        _testQuestions.value= null
+    }
 }

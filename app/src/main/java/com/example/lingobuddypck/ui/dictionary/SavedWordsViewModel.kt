@@ -9,10 +9,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.lingobuddypck.Network.TogetherAI.AIGradingResult
 import com.example.lingobuddypck.Network.TogetherAI.QuestionData
 import com.example.lingobuddypck.Network.TogetherAI.UserAnswer
-import com.example.lingobuddypck.ViewModel.Repository.AiQuizService
+import com.example.lingobuddypck.Factory.QuizService.AiQuizService
+import com.example.lingobuddypck.Factory.QuizService.QuizViewModel
 import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.ViewModel.Repository.SavedWord
-import com.example.lingobuddypck.ViewModel.TestViewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -36,26 +36,30 @@ open class Event<out T>(private val content: T) {
 
 class SavedWordsViewModel(
     private val aiQuizService: AiQuizService
-)  : ViewModel() {
+)  : ViewModel(), QuizViewModel {
 
     // Khởi tạo Repository
     private val repository = FirebaseWordRepository()
 
     private val _testQuestions = MutableLiveData<List<QuestionData>?>()
-    val testQuestions: LiveData<List<QuestionData>?> = _testQuestions
+    override val testQuestions: LiveData<List<QuestionData>?> = _testQuestions
 
     private val _gradingResult = MutableLiveData<AIGradingResult?>()
-    val gradingResult: LiveData<AIGradingResult?> = _gradingResult
+    override val gradingResult: LiveData<AIGradingResult?> = _gradingResult
 
     private val _errorMesssage = MutableLiveData<String?>()
-    val errorMessage: LiveData<String?> = _errorMesssage
+    override val errorMessage: LiveData<String?> = _errorMesssage
+
+    private val _isFetchingTest = MutableLiveData<Boolean>()
+    override val isFetchingTest: LiveData<Boolean> = _isFetchingTest
+
 
     private val _savedWords = MutableLiveData<List<SavedWord>>()
     val savedWords: LiveData<List<SavedWord>> = _savedWords
 
     // LiveData cho trạng thái đang tải dữ liệu
     private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    override val isLoading: LiveData<Boolean> = _isLoading
 
     // LiveData cho thông báo lỗi (sử dụng Event để chỉ hiển thị một lần)
     private val _error = MutableLiveData<Event<String?>>()
@@ -77,13 +81,13 @@ class SavedWordsViewModel(
             throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
-    fun fetchTest() {
+    override fun fetchTest(topic: String, isCustom: Boolean) {
         // ViewModel updates its own loading state
         _isLoading.value = true
         _testQuestions.value = null // Clear previous state
         _gradingResult.value = null
         _errorMesssage.value = null
-
+        _isFetchingTest.value=true
         viewModelScope.launch {
             try {
                 // Call the service function
@@ -97,11 +101,12 @@ class SavedWordsViewModel(
             } finally {
                 // ViewModel updates its own loading state
                 _isLoading.postValue(false)
+                _isFetchingTest.postValue(false)
             }
         }
     }
 
-    fun submitAnswers(userAnswers: List<UserAnswer>) {
+    override fun submitAnswers(userAnswers: List<UserAnswer>) {
         val currentQuestions = _testQuestions.value
         if (currentQuestions == null || currentQuestions.isEmpty()) {
             _errorMesssage.value = "Không có bài test để chấm điểm."
@@ -131,14 +136,17 @@ class SavedWordsViewModel(
     }
 
     // These remain as they manage ViewModel-specific state
-    fun clearGradingResult() {
+    override  fun clearGradingResult() {
         _gradingResult.value = null
     }
 
-    fun clearErrorMessage() {
+    override  fun clearErrorMessage() {
         _errorMesssage.value = null
     }
 
+    override fun clearQuestions() {
+        _testQuestions.value= null
+    }
 
     init {
         // Tải danh sách từ ngay khi ViewModel được tạo

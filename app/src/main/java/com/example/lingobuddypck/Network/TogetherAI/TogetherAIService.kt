@@ -95,3 +95,15 @@ data class AIGradingResult(
     val total_questions: Int,
     val feedback: Map<String, QuestionFeedback> // Optional: {"q1": "correct", "q2": "incorrect"}
 )
+
+data class PassageQuizData(
+    val passage: String,
+    val questions: List<BlankQuestion>
+)
+
+data class BlankQuestion(
+    val id: String,
+    val sentence: String,
+    val options: Map<String, String>,
+    val correct_answer: String
+)

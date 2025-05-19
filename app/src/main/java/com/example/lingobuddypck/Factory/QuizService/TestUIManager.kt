@@ -2,6 +2,7 @@ package com.example.lingobuddypck.Factory.QuizService
 
 
 import android.content.Context
+import android.graphics.Color
 import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
@@ -65,10 +66,39 @@ class TestUIManager(
         views.buttonStart.setOnClickListener {
             onShowConfirmationDialog?.invoke() ?: startNewTestFlow()
         }
+
         views.buttonSubmit.setOnClickListener {
             if (isShowingGradingResult) {
-                confirmGradingResult()
+                // Trạng thái: Kết quả đang được hiển thị.
+                // Hành động của nút: xác nhận kết quả hoặc chuyển sang bước tiếp theo.
+                if (isProficiencyTestMode) {
+                    if (currentTestCount < maxTests - 1) {
+                        // Hành động: Chuyển sang bài kiểm tra tiếp theo trong chuỗi proficiency.
+                        currentTestCount++
+                        isShowingGradingResult = false // Quan trọng: Để lần nhấp submit tiếp theo là để nộp bài.
+                        viewModel.clearGradingResult() // Xóa kết quả cũ.
+
+                        // Đặt lại các thành phần UI liên quan đến việc hiển thị kết quả.
+                        views.textViewResult.isVisible = false
+                        feedbackViews.values.forEach { it.isVisible = false }
+                        // Giao diện tải sẽ được kích hoạt từ startNextProficiencyTest().
+                        // Văn bản nút sẽ được đặt thành "Nộp bài" bởi updateLoadingUI/renderQuestions.
+                        startNextProficiencyTest()
+                    } else {
+                        // Hành động: Hiển thị điểm proficiency cuối cùng và kết thúc chế độ proficiency.
+                        isProficiencyTestMode = false // Kết thúc proficiency mode.
+                        val finalScore = (totalCorrectAnswers * 2).coerceAtMost(100) // Giả sử công thức này đúng.
+                        saveProficiencyTestResult(finalScore)
+                        // Bây giờ, xác nhận và đặt lại về trạng thái màn hình ban đầu.
+                        confirmGradingResult()
+                    }
+                } else {
+                    // Hành động: Chế độ không phải proficiency, xác nhận kết quả và đặt lại.
+                    confirmGradingResult()
+                }
             } else {
+                // Trạng thái: Câu hỏi đang được hiển thị, chờ nộp bài.
+                // Hành động: Nộp câu trả lời cho bài kiểm tra hiện tại.
                 submitUserAnswers()
             }
         }
@@ -144,13 +174,46 @@ class TestUIManager(
     }
 
     private fun setupObservers() {
+        observeLoading()
+        observeFetchingTest()
+        observeTestQuestions()
+        observeGradingResult()
+        observeErrorMessage()
+    }
 
+    private fun observeLoading() {
         viewModel.isLoading.observe(lifecycleOwner) { isLoading ->
-            views.progressBar.isVisible = isLoading
-            views.textViewLoadingHint.isVisible = isLoading
-            views.textViewCountdown.isVisible = isLoading
-            views.buttonStart.isEnabled = !isLoading
-            views.buttonSubmit.isEnabled = !isLoading
+            updateLoadingUI(isLoading)
+            if (isLoading) startCountdown() else stopCountdown()
+        }
+    }
+
+    private fun updateLoadingUI(isLoading: Boolean) {
+        views.progressBar.isVisible = isLoading
+        views.textViewLoadingHint.isVisible = isLoading
+        views.textViewCountdown.isVisible = isLoading
+        views.buttonStart.isEnabled = !isLoading
+        views.buttonSubmit.isEnabled = !isLoading
+        views.scrollView.alpha = if (isLoading) 0.1f else 1f
+        views.aiAvatar.isVisible = isLoading
+
+        if (!isLoading) {
+            views.textViewCountdown.isVisible = false
+            if (viewModel.testQuestions.value != null && !isShowingGradingResult) {
+                views.buttonSubmit.isVisible = true
+                views.buttonSubmit.text = "Nộp bài"
+                views.buttonStart.isVisible = false
+                views.customTopicEditTxt?.isVisible = false
+                views.recyclerView?.isVisible = false
+                onHideNavigationBar?.invoke()
+            } else if (viewModel.gradingResult.value == null && viewModel.errorMessage.value != null) {
+                resetUIForStart()
+            }
+        }
+    }
+
+    private fun observeFetchingTest() {
+        viewModel.isFetchingTest.observe(lifecycleOwner) { isFetchingTest ->
             val fetchingTestMessages = listOf(
                 "⌛ Một chút thôi... AI đang gãi đầu nghĩ câu hỏi.",
                 "🧠 Đang suy nghĩ... đừng rời đi nhé!",
@@ -167,178 +230,129 @@ class TestUIManager(
                 "🎯 Nhắm trúng lỗi sai rồi, giờ đang vẽ vòng tròn đỏ.",
                 "📡 Kết nối server chấm điểm... "
             )
-
-            viewModel.isFetchingTest.observe(lifecycleOwner){isFetchingTest->
-                if (isFetchingTest)
-                    views.textViewLoadingHint.text = fetchingTestMessages.random()
-                else
-                    views.textViewLoadingHint.text = gradingMessages.random()
-            }
-            if (isLoading) {
-                views.scrollView.alpha = 0.1f
-                views.aiAvatar.isVisible = true
-                countdownTimer?.cancel()
-                countdownTimer = object : CountDownTimer(60000, 1000) {
-                    override fun onTick(millisUntilFinished: Long) {
-                        views.textViewCountdown.text = "Thời gian còn lại: ${millisUntilFinished / 1000}s"
-                    }
-
-                    override fun onFinish() {
-                        views.textViewCountdown.text = "⏳ Có vẻ đang mất nhiều thời gian... hãy kiên nhẫn!"
-                    }
-                }.start()
-            } else {
-                countdownTimer?.cancel()
-                views.textViewCountdown.isVisible = false
-                views.aiAvatar.isVisible = false
-                views.scrollView.alpha = 1f
-
-                if (viewModel.testQuestions.value != null && !isShowingGradingResult) {
-                    views.buttonSubmit.isVisible = true
-                    views.buttonSubmit.text = "Nộp bài"
-                    views.buttonStart.isVisible = false
-                    views.customTopicEditTxt?.isVisible = false
-                    views.recyclerView?.isVisible = false
-                    onHideNavigationBar?.invoke()
-                } else if (viewModel.gradingResult.value == null && viewModel.errorMessage.value != null) {
-                    resetUIForStart()
-                }
-            }
+            val text = if (isFetchingTest) fetchingTestMessages.random() else gradingMessages.random()
+            views.textViewLoadingHint.text = text
         }
+    }
 
+    private fun observeTestQuestions() {
         viewModel.testQuestions.observe(lifecycleOwner) { questions ->
-            if (!isShowingGradingResult) {
-                views.questionsContainer.removeAllViews()
-                questionViews.clear()
-                feedbackViews.clear()
+            if (isShowingGradingResult) return@observe
+            views.questionsContainer.removeAllViews()
+            questionViews.clear()
+            feedbackViews.clear()
 
-                if (!questions.isNullOrEmpty()) {
-                    views.scrollView.isVisible = true
-                    views.customTopicEditTxt?.isVisible = false
-                    views.recyclerView?.isVisible = false
-                    onHideNavigationBar?.invoke()
-
-                    questions.forEachIndexed { index, questionData ->
-                        addQuestionToLayout(index, questionData)
-                    }
-                    val bottomSpacer = View(context).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            context.resources.getDimensionPixelSize(R.dimen.scroll_bottom_padding)
-                        )
-                    }
-                    views.questionsContainer.addView(bottomSpacer)
-                    if (viewModel.isLoading.value == false) {
-                        views.buttonSubmit.isVisible = true
-                        views.buttonSubmit.text = "Nộp bài"
-                        views.buttonStart.isVisible = false
-                    }
-                } else {
-                    views.scrollView.isVisible = false
-                    views.buttonSubmit.isVisible = false
-                    if (viewModel.isLoading.value == false) {
-                        resetUIForStart()
-                    }
-                }
-                views.scrollView.post { views.scrollView.fullScroll(ScrollView.FOCUS_UP) }
+            if (!questions.isNullOrEmpty()) {
+                renderQuestions(questions)
+            } else {
+                views.scrollView.isVisible = false
+                views.buttonSubmit.isVisible = false
+                if (viewModel.isLoading.value == false) resetUIForStart()
             }
         }
+    }
 
+    private fun renderQuestions(questions: List<QuestionData>) {
+        views.scrollView.isVisible = true
+        views.customTopicEditTxt?.isVisible = false
+        views.recyclerView?.isVisible = false
+        onHideNavigationBar?.invoke()
+
+        questions.forEachIndexed { index, q -> addQuestionToLayout(index, q) }
+        val spacer = View(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                context.resources.getDimensionPixelSize(R.dimen.scroll_bottom_padding)
+            )
+        }
+        views.questionsContainer.addView(spacer)
+        if (viewModel.isLoading.value == false) {
+            views.buttonSubmit.isVisible = true
+            views.buttonSubmit.text = "Nộp bài"
+            views.buttonStart.isVisible = false
+        }
+        views.scrollView.post { views.scrollView.fullScroll(ScrollView.FOCUS_UP) }
+    }
+
+    private fun observeGradingResult() {
         viewModel.gradingResult.observe(lifecycleOwner) { result ->
-            if (result != null) {
-                isShowingGradingResult = true
-                views.textViewResult.text =
-                    "Kết quả: ${result.score}/${result.total_questions} câu đúng."
-                views.textViewResult.isVisible = true
-                views.buttonSubmit.text = "Xác nhận"
-                views.buttonSubmit.isVisible = true
-                views.buttonSubmit.isEnabled = true
-                views.buttonStart.isVisible = false
-                val correct = result.score
-                val total = result.total_questions
-                totalCorrectAnswers += correct
-                totalQuestionsAnswered += total
+            if (result == null) {
+                views.textViewResult.isVisible = false
+                return@observe
+            }
 
-                viewModel.gradingResult.observe(lifecycleOwner) { result ->
-                    if (result != null) {
-                        isShowingGradingResult = true
+            isShowingGradingResult = true
+            val correct = result.score
+            val total = result.total_questions
+            totalCorrectAnswers += correct
+            totalQuestionsAnswered += total
 
-                        val correct = result.score
-                        val total = result.total_questions
-                        totalCorrectAnswers += correct
-                        totalQuestionsAnswered += total
+            views.textViewResult.text = "Kết quả: $correct/$total câu đúng."
+            views.textViewResult.isVisible = true
+            views.buttonSubmit.isVisible = true
+            views.buttonSubmit.isEnabled = true
+            views.buttonStart.isVisible = false
 
-                        views.textViewResult.text = "Kết quả: $correct/$total câu đúng."
-                        views.textViewResult.isVisible = true
-                        views.buttonSubmit.isVisible = true
-                        views.buttonSubmit.isEnabled = true
-                        views.buttonStart.isVisible = false
+            result.feedback.forEach { (qid, fb) ->
+                val question = viewModel.testQuestions.value?.find { it.id == qid }
+                val correctDisplay = question?.options?.get(question.correct_answer)?.let {
+                    "${question.correct_answer.uppercase()}. $it"
+                } ?: question?.correct_answer?.uppercase() ?: "N/A"
 
-                        // Hiển thị feedback cho từng câu hỏi
-                        result.feedback.forEach { (questionId, feedback) ->
-                            val question =
-                                viewModel.testQuestions.value?.find { it.id == questionId }
-                            val correctAnswerDisplay =
-                                question?.options?.get(question.correct_answer)?.let {
-                                    "${question.correct_answer.uppercase()}. $it"
-                                } ?: question?.correct_answer?.uppercase() ?: "N/A"
-
-                            feedbackViews[questionId]?.apply {
-                                isVisible = true
-                                if (feedback.status == "correct") {
-                                    setTextColor(android.graphics.Color.parseColor("#228B22"))
-                                    text = "✅ Trả lời đúng"
-                                } else {
-                                    setTextColor(android.graphics.Color.parseColor("#B22222"))
-                                    text =
-                                        "❌ Trả lời sai.\nĐáp án đúng: $correctAnswerDisplay.\nGiải thích: ${feedback.explanation ?: "Không có giải thích."}"
-                                }
-                            }
-                        }
-
-                        views.scrollView.post { views.scrollView.fullScroll(ScrollView.FOCUS_UP) }
-
-                        // Gán hành động nút xác nhận (luôn gán listener)
-                        views.buttonSubmit.text = when {
-                            isProficiencyTestMode && currentTestCount < maxTests - 1 -> "Bài tiếp theo (${currentTestCount + 2}/5)"
-                            isProficiencyTestMode && currentTestCount == maxTests - 1 -> "Xem điểm đánh giá"
-                            else -> "Xác nhận"
-                        }
-
-                        views.buttonSubmit.setOnClickListener {
-                            if (isProficiencyTestMode) {
-                                if (currentTestCount < maxTests - 1) {
-                                    currentTestCount++
-                                    isShowingGradingResult = false
-                                    viewModel.clearGradingResult()
-                                    startNextProficiencyTest()
-                                } else {
-                                    isProficiencyTestMode = false
-                                    val finalScore = (totalCorrectAnswers * 2).coerceAtMost(100)
-                                    saveProficiencyTestResult(finalScore)
-                                    confirmGradingResult()
-                                }
-                            } else {
-                                confirmGradingResult()
-                            }
-                        }
+                feedbackViews[qid]?.apply {
+                    isVisible = true
+                    if (fb.status == "correct") {
+                        setTextColor(Color.parseColor("#228B22"))
+                        text = "✅ Trả lời đúng"
                     } else {
-                        views.textViewResult.isVisible = false
+                        setTextColor(Color.parseColor("#B22222"))
+                        text = "❌ Trả lời sai.\nĐáp án đúng: $correctDisplay.\nGiải thích: ${fb.explanation ?: "Không có giải thích."}"
                     }
                 }
             }
-        }
 
+            views.scrollView.post { views.scrollView.fullScroll(ScrollView.FOCUS_UP) }
+            updateSubmitButtonTextAfterGrading()
+        }
+    }
+
+    private fun updateSubmitButtonTextAfterGrading() {
+        views.buttonSubmit.text = when {
+            isProficiencyTestMode && currentTestCount < maxTests - 1 -> "Bài tiếp theo (${currentTestCount + 2}/$maxTests)" // currentTestCount là số bài đã hoàn thành (0-indexed)
+            isProficiencyTestMode && currentTestCount == maxTests - 1 -> "Xem điểm đánh giá"
+            else -> "Xác nhận" // Dành cho chế độ không phải proficiency hoặc sau khi hoàn thành proficiency
+        }
+    }
+
+    private fun observeErrorMessage() {
         viewModel.errorMessage.observe(lifecycleOwner) { message ->
             message?.let {
                 Toast.makeText(context, it, Toast.LENGTH_LONG).show()
                 viewModel.clearErrorMessage()
-                if (viewModel.isLoading.value == false) {
-                    resetUIForStart()
-                }
+                if (viewModel.isLoading.value == false) resetUIForStart()
             }
         }
     }
+
+    // Countdown helper
+    private fun startCountdown() {
+        countdownTimer?.cancel()
+        countdownTimer = object : CountDownTimer(60000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                views.textViewCountdown.text = "Thời gian còn lại: ${millisUntilFinished / 1000}s"
+            }
+
+            override fun onFinish() {
+                views.textViewCountdown.text = "⏳ Có vẻ đang mất nhiều thời gian... hãy kiên nhẫn!"
+            }
+        }.start()
+    }
+
+    private fun stopCountdown() {
+        countdownTimer?.cancel()
+    }
+
+
 
     private fun saveProficiencyTestResult(score: Int) {
         // TODO: lưu vào Firebase, Room hoặc chia sẻ ViewModel

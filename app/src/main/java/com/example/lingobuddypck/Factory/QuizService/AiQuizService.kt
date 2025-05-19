@@ -258,7 +258,7 @@ class AiQuizService(
 
         val messages = listOf(systemMessageForGrading, Message("user", gradingPrompt))
         val request = ChatRequest(
-            model = "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free", // Or parameterize the model
+            model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", // Or parameterize the model
             messages = messages,
             temperature = 0.1
         )

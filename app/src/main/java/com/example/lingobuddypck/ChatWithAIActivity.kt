@@ -20,7 +20,10 @@ import com.example.lingobuddypck.ViewModel.ChatViewModel
 import com.example.lingobuddypck.adapter.ChatAdapter
 import com.example.lingobuddypck.data.ChatItemDecoration
 import android.Manifest
+import android.speech.tts.TextToSpeech
+import android.util.Log
 import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
+import java.util.Locale
 
 
 class ChatWithAIActivity : AppCompatActivity() {
@@ -35,8 +38,9 @@ class ChatWithAIActivity : AppCompatActivity() {
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var speechRecognitionIntent: Intent
     private lateinit var speechActivityResultLauncher: ActivityResultLauncher<Intent>
-
     private val RECORD_AUDIO_PERMISSION_CODE = 123
+    private lateinit var textToSpeech: TextToSpeech
+    private var usedSpeechToText = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,9 +57,22 @@ class ChatWithAIActivity : AppCompatActivity() {
         recyclerView.adapter = adapter
         recyclerView.addItemDecoration(ChatItemDecoration(50))
 
+        textToSpeech = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                textToSpeech.language = Locale.US
+            }
+        }
+
         viewModel.chatMessages.observe(this, Observer { messages ->
             adapter.setMessages(messages)
             recyclerView.scrollToPosition(messages.size - 1)
+
+            // If the last message is from the bot and user used voice input
+            val lastMessage = messages.lastOrNull()
+            if (usedSpeechToText && lastMessage != null && lastMessage.role=="assistant"&&lastMessage.content!=null) {
+                detectLanguageAndSpeak(lastMessage.content)
+                usedSpeechToText = false // reset flag
+            }
         })
 
         viewModel.isLoading.observe(this, Observer { isLoading ->
@@ -75,7 +92,8 @@ class ChatWithAIActivity : AppCompatActivity() {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US") // You can change the language
         }
 
-        // ActivityResultLauncher for speech recognition
+        usedSpeechToText = false // reset in onCreate
+
         speechActivityResultLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == RESULT_OK && result.data != null) {
@@ -83,6 +101,8 @@ class ChatWithAIActivity : AppCompatActivity() {
                     results?.let {
                         if (it.isNotEmpty()) {
                             inputMessage.setText(it[0])
+                            usedSpeechToText = true
+                            sendMessage()
                         }
                     }
                 } else {
@@ -93,6 +113,31 @@ class ChatWithAIActivity : AppCompatActivity() {
         micButton.setOnClickListener {
             checkAudioPermissionAndStartRecognition()
         }
+    }
+
+    private fun detectLanguageAndSpeak(text: String) {
+        val languageIdentifier = com.google.mlkit.nl.languageid.LanguageIdentification.getClient()
+        languageIdentifier.identifyLanguage(text)
+            .addOnSuccessListener { languageCode ->
+                if (languageCode != "und") {
+                    val locale = Locale(languageCode)
+                    if (textToSpeech.isLanguageAvailable(locale) >= TextToSpeech.LANG_AVAILABLE) {
+                        textToSpeech.language = locale
+                    }
+                    speakOut(text)
+                } else {
+                    Log.d("TTS", "Unable to identify language")
+                    speakOut(text) // fallback
+                }
+            }
+            .addOnFailureListener {
+                Log.e("TTS", "Language detection failed", it)
+                speakOut(text) // fallback
+            }
+    }
+
+    private fun speakOut(text: String) {
+        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     private fun sendMessage() {

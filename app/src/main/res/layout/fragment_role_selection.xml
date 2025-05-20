@@ -114,13 +114,13 @@
         android:id="@+id/btn_start_conversation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="348dp"
-        android:text="Start Conversation"
+        android:layout_marginTop="16dp"
         android:background="@drawable/rounded_button"
+        android:text="Start Conversation"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_swap_roles" />
+        app:layout_constraintTop_toBottomOf="@+id/editTxtCustomContext" />
 
     <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/customSwitch"
@@ -163,14 +163,13 @@
         android:id="@+id/editTxtCustomContext"
         android:layout_width="327dp"
         android:layout_height="88dp"
+        android:layout_marginTop="476dp"
         android:ems="10"
+        android:hint="Bối cảnh tùy chọn"
         android:inputType="text"
         android:textAlignment="gravity"
-        android:hint="Bối cảnh tùy chọn"
-        app:layout_constraintBottom_toTopOf="@+id/btn_start_conversation"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.867" />
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

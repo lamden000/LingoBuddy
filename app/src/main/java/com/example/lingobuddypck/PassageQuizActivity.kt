@@ -1,6 +1,8 @@
 package com.example.lingobuddypck
 
 import android.os.Bundle
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.viewModels
@@ -10,6 +12,7 @@ import com.example.lingobuddypck.Factory.QuizService.PassageQuizViews
 import com.example.lingobuddypck.Network.RetrofitClient
 import com.example.lingobuddypck.ViewModel.PassageQuizViewModelImpl
 import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
+import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
 import com.google.gson.Gson // Your Gson instance
 
 class PassageQuizActivity : AppCompatActivity() {
@@ -27,10 +30,25 @@ class PassageQuizActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_passage_quiz)
 
+        val passageTextView = findViewById<TextView>(R.id.passageTextView)
+
+        passageTextView.enableSelectableSaveAction(this) { selectedText, note ->
+            FirebaseWordRepository().saveWord(
+                word = selectedText,
+                note = note,
+                onSuccess = {
+                    Toast.makeText(this, "Đã lưu \"$selectedText\"!", Toast.LENGTH_SHORT).show()
+                },
+                onFailure = {
+                    Toast.makeText(this, "Lỗi khi lưu từ: ${it.message}", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
         // Instantiate the PassageQuizViews data class with your layout elements
         val views = PassageQuizViews(
             progressBar = findViewById(R.id.progressBar),
-            passageTextView = findViewById(R.id.passageTextView),
+            passageTextView ,
             questionsContainer = findViewById(R.id.questionsContainer),
             buttonSubmit = findViewById(R.id.buttonSubmit),
             buttonStart = findViewById(R.id.buttonStart),

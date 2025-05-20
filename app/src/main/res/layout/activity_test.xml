@@ -79,20 +79,20 @@
 
     <TextView
         android:id="@+id/textViewLoadingHint"
-        android:layout_width="393dp"
-        android:layout_height="55dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:text="🧠 Đang suy nghĩ... hy vọng không phải quá lâu!"
+        android:textAlignment="center"
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         android:textColor="#888888"
-        android:textAlignment="center"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/buttonSubmitTest"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.516"
+        app:layout_constraintHorizontal_bias="0.483"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.63" />
+        app:layout_constraintTop_toBottomOf="@+id/progressBarTest"
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/textViewCountdown"
@@ -103,24 +103,21 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Small"
         android:textColor="#888888"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.459"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.696" />
+        app:layout_constraintTop_toBottomOf="@+id/textViewLoadingHint" />
 
     <ImageView
         android:id="@+id/aiAvatarLoading"
-        android:layout_width="261dp"
-        android:layout_height="262dp"
+        android:layout_width="242dp"
+        android:layout_height="256dp"
+        android:layout_marginTop="152dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@+id/buttonSubmitTest"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.247"
+        app:layout_constraintHorizontal_bias="0.266"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.336"
         app:srcCompat="@drawable/avatar_ai" />
 
     <ProgressBar
@@ -128,9 +125,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.462"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintTop_toBottomOf="@+id/aiAvatarLoading" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

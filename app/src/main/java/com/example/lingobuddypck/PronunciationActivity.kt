@@ -14,40 +14,103 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import android.Manifest
 import android.content.pm.PackageManager
+import android.view.View
+import android.widget.ProgressBar
+import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.lingobuddypck.Factory.PronunciationAiService
 import com.example.lingobuddypck.Network.RetrofitClient
-import com.example.lingobuddypck.Network.TogetherAI.ChatRequest
-import com.example.lingobuddypck.Network.TogetherAI.ChatResponse
-import com.example.lingobuddypck.Network.TogetherAI.Message
-import org.json.JSONObject
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-
+import com.example.lingobuddypck.Network.TogetherAI.PronunciationFeedback
+import com.example.lingobuddypck.ViewModel.PronunciationViewModel
+import com.google.android.material.textfield.TextInputEditText
+import com.google.gson.Gson
 class PronunciationActivity : AppCompatActivity() {
 
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var btnStart: Button
+    private lateinit var btnGenerateReference: Button
+    private lateinit var etTopicInput: TextInputEditText
     private lateinit var txtResult: TextView
     private lateinit var tvReference: TextView
     private lateinit var txtStatus: TextView
-    private val referenceText = "Hello, how are you today?"
+    private lateinit var progressBar: ProgressBar
+
+    private val viewModel: PronunciationViewModel by viewModels {
+        PronunciationViewModel.Factory(
+            PronunciationAiService(RetrofitClient.instance, Gson())
+        )
+    }
+
     private val REQUEST_RECORD_AUDIO_PERMISSION = 200
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        setContentView(R.layout.activity_pronunciation)
+
+        btnStart = findViewById(R.id.btnStart)
+        btnGenerateReference = findViewById(R.id.btnGenerateReference)
+        etTopicInput = findViewById(R.id.etTopicInput)
+        txtResult = findViewById(R.id.txtResult)
+        tvReference = findViewById(R.id.tvReferenceText)
+        txtStatus = findViewById(R.id.txtStatus)
+        progressBar = findViewById(R.id.progressBar)
+
         checkAudioPermission()
 
-        setContentView(R.layout.activity_pronunciation)
-        btnStart = findViewById(R.id.btnStart)
-        txtResult = findViewById(R.id.txtResult)
-        tvReference=findViewById(R.id.tvReferenceText)
-        txtStatus=findViewById(R.id.txtStatus)
+        setupListeners()
+        setupObservers()
 
-        tvReference.text =referenceText;
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        speechRecognizer.setRecognitionListener(createRecognitionListener())
+    }
+
+    private fun setupListeners() {
         btnStart.setOnClickListener {
-            startSpeechRecognition()
+            startListening()
+        }
+
+        btnGenerateReference.setOnClickListener {
+            val topic = etTopicInput.text.toString().trim()
+            viewModel.generateNewReferenceText(topic)
+        }
+    }
+
+    private fun setupObservers() {
+        viewModel.referenceText.observe(this) { text ->
+            tvReference.text = text
+            txtResult.text = ""
+            viewModel.clearPronunciationFeedback()
+        }
+
+        viewModel.userSpeechResult.observe(this) { result ->
+            txtResult.text = "Bạn đã nói: $result"
+            viewModel.checkPronunciation(result, viewModel.referenceText.value ?: "")
+        }
+
+        viewModel.pronunciationFeedback.observe(this) { feedback ->
+            feedback?.let {
+                showCorrectionResult(it)
+            }
+        }
+
+        viewModel.statusMessage.observe(this) { message ->
+            txtStatus.text = message
+        }
+
+        viewModel.errorMessage.observe(this) { message ->
+            message?.let {
+                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+                viewModel.setErrorMessage(null) // Consume the error by setting to null
+            }
+        }
+
+        viewModel.isLoading.observe(this) { isLoading ->
+            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            btnStart.isEnabled = !isLoading
+            btnGenerateReference.isEnabled = !isLoading
+            etTopicInput.isEnabled = !isLoading
         }
     }
 
@@ -57,104 +120,112 @@ class PronunciationActivity : AppCompatActivity() {
         }
     }
 
-    private fun startSpeechRecognition() {
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted
+            } else {
+                Toast.makeText(this, "Quyền ghi âm bị từ chối. Không thể sử dụng chức năng này.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun startListening() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Cần quyền ghi âm để sử dụng tính năng này.", Toast.LENGTH_SHORT).show()
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
+            return
+        }
+
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+        intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, this.packageName)
 
-        speechRecognizer.setRecognitionListener(object : RecognitionListener {
+        try {
+            speechRecognizer.startListening(intent)
+            // CORRECTED: Call ViewModel function to update status
+            viewModel.updateStatusMessage("Đang nghe...")
+        } catch (e: Exception) {
+            Log.e("PronunciationActivity", "Error starting speech recognition: ${e.message}")
+            // CORRECTED: Call ViewModel function to set error
+            viewModel.setErrorMessage("Lỗi khi bắt đầu nhận diện giọng nói: ${e.message}")
+        }
+    }
+
+    private fun createRecognitionListener(): RecognitionListener {
+        return object : RecognitionListener {
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
                     val userSpeech = matches[0]
-                    txtResult.text = "Bạn đã nói: $userSpeech"
-                    checkPronunciation(userSpeech, referenceText)
+                    viewModel.setUserSpeechResult(userSpeech)
                 }
+                // CORRECTED: Call ViewModel function to update status
+                viewModel.updateStatusMessage("Ghi âm kết thúc.")
             }
 
             override fun onError(error: Int) {
                 val errorMessage = when (error) {
-                    SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Lỗi mạng: Hết thời gian chờ"
-                    SpeechRecognizer.ERROR_NETWORK -> "Lỗi mạng: Không kết nối được"
-                    SpeechRecognizer.ERROR_AUDIO -> "Lỗi âm thanh"
-                    SpeechRecognizer.ERROR_SERVER -> "Lỗi máy chủ"
-                    SpeechRecognizer.ERROR_CLIENT -> "Lỗi ứng dụng"
-                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Không nhận diện được giọng nói"
-                    SpeechRecognizer.ERROR_NO_MATCH -> "Không tìm thấy kết quả"
-                    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Bộ nhận diện đang bận"
-                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Thiếu quyền RECORD_AUDIO"
+                    SpeechRecognizer.ERROR_NETWORK -> "Lỗi mạng: Không kết nối được."
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Không nhận diện được giọng nói."
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Thiếu quyền RECORD_AUDIO."
+                    SpeechRecognizer.ERROR_NO_MATCH -> "Không nhận diện được lời nói."
+                    SpeechRecognizer.ERROR_CLIENT -> "Lỗi client nhận diện giọng nói."
                     else -> "Lỗi không xác định: $error"
                 }
-
                 Log.e("SpeechRecognizer", errorMessage)
-                Toast.makeText(this@PronunciationActivity, errorMessage, Toast.LENGTH_SHORT).show()
+                // CORRECTED: Call ViewModel function to set error
+                viewModel.setErrorMessage(errorMessage)
+                // CORRECTED: Call ViewModel function to update status
+                viewModel.updateStatusMessage("Sẵn sàng.")
             }
 
             override fun onReadyForSpeech(params: Bundle?) {
-                    txtStatus.text="Đang nghe..."
+                // CORRECTED: Call ViewModel function to update status
+                viewModel.updateStatusMessage("Đang nghe...")
             }
 
             override fun onBeginningOfSpeech() {
-                txtStatus.text="Đã nhận diện giọng nói..."
+                // CORRECTED: Call ViewModel function to update status
+                viewModel.updateStatusMessage("Đã nhận diện giọng nói...")
             }
 
             override fun onEndOfSpeech() {
-                txtStatus.text="Ghi âm kết thúc."
+                // CORRECTED: Call ViewModel function to update status
+                viewModel.updateStatusMessage("Đang xử lý...")
             }
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onPartialResults(partialResults: Bundle?) {}
             override fun onEvent(eventType: Int, params: Bundle?) {}
-        })
-
-        speechRecognizer.startListening(intent)
-    }
-    private fun checkPronunciation(userSpeech: String, referenceText: String) {
-        val prompt = """
-        Tôi sẽ đưa cho bạn một câu tiếng Anh và một câu được đọc bởi người học. 
-        Hãy chấm điểm phát âm (từ 0-10) và chỉ ra lỗi sai.
-        Sau đó, gợi ý cách sửa lỗi (không xét các dấu câu vì đây là phát âm).
-        
-        **Câu gốc:** "$referenceText"
-        **Người học nói:** "$userSpeech"
-        
-        Trả lời dạng JSON:
-        {
-          "score": 8.5,
-          "mistakes": ["word1", "word2"],
-          "suggestions": ["Phát âm lại 'word1' với âm /æ/ thay vì /e/"]
         }
-    """.trimIndent()
-
-        val request = ChatRequest(model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", messages = listOf(
-            Message("user", prompt)
-        ))
-
-        RetrofitClient.instance.chatWithAI(request).enqueue(object : Callback<ChatResponse> {
-            override fun onResponse(call: Call<ChatResponse>, response: Response<ChatResponse>) {
-                val result = response.body()?.output?.choices?.get(0)?.text?: "Không có phản hồi từ AI"
-                showCorrectionResult(result)
-            }
-
-            override fun onFailure(call: Call<ChatResponse>, t: Throwable) {
-                Toast.makeText(this@PronunciationActivity, "Lỗi khi gọi AI", Toast.LENGTH_SHORT).show()
-            }
-        })
     }
-    private fun showCorrectionResult(result: String) {
-        val json = JSONObject(result)
-        val score = json.getDouble("score")
-        val mistakes = json.getJSONArray("mistakes")
-        val suggestions = json.getJSONArray("suggestions")
 
-        val feedback = "Điểm phát âm: $score/10\nLỗi: ${mistakes.join(", ")}\nGợi ý sửa: ${suggestions.join("\n")}"
+    private fun showCorrectionResult(feedback: PronunciationFeedback) {
+        val mistakesText = if (feedback.mistakes.isNotEmpty()) feedback.mistakes.joinToString(", ") else "Không có lỗi"
+        val suggestionsText = if (feedback.suggestions.isNotEmpty()) feedback.suggestions.joinToString("\n") else "Không có gợi ý sửa lỗi."
+
+        val feedbackMessage = """
+            Điểm phát âm: ${feedback.score}/10
+            Lỗi: $mistakesText
+            Gợi ý sửa:
+            $suggestionsText
+        """.trimIndent()
 
         AlertDialog.Builder(this)
             .setTitle("Kết quả chấm điểm")
-            .setMessage(feedback)
-            .setPositiveButton("OK") { _, _ -> }
+            .setMessage(feedbackMessage)
+            .setPositiveButton("OK") { dialog, _ ->
+                dialog.dismiss()
+                viewModel.clearPronunciationFeedback()
+            }
             .show()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        speechRecognizer.destroy()
+    }
 }

@@ -21,7 +21,6 @@ data class ChatRequest(
     val model: String,
     val messages: List<Message>,
     val max_tokens: Int = 2000,
-    val top_k: Int = 30,
     val temperature: Double = 1.3
 )
 
@@ -99,4 +98,10 @@ data class AIGradingResult(
 data class PassageQuizData(
     val passage: String,
     val questions: List<QuestionData>
+)
+
+data class PronunciationFeedback(
+    val score: Double,
+    val mistakes: List<String>,
+    val suggestions: List<String>
 )

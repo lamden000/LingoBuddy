@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModelProvider
 import com.example.lingobuddypck.Factory.QuizService.AiQuizService
 import com.example.lingobuddypck.Factory.QuizService.QuizViewModel
+import kotlinx.coroutines.delay
 
 
 class TestViewModel(
@@ -47,27 +48,37 @@ class TestViewModel(
         }
     }
 
-   override fun fetchTest(topic: String, isCustom: Boolean) {
-        // ViewModel updates its own loading state
+    override fun fetchTest(topic: String, isCustom: Boolean) {
         _isLoading.value = true
-        _testQuestions.value = null // Clear previous state
+        _testQuestions.value = null
         _gradingResult.value = null
         _errorMesssage.value = null
-       _isFetchingTest.value=true
+        _isFetchingTest.value = true
 
         viewModelScope.launch {
-            try {
-                val questions = aiQuizService.generateQuiz(topic, isCustom)
-                _testQuestions.postValue(questions)
-            } catch (e: Exception) {
-                // Handle exceptions thrown by the service
-                Log.e("TestViewModel", "Error fetching test", e) // Log the error
-                _errorMesssage.postValue(e.message)
-            } finally {
-                // ViewModel updates its own loading state
-                _isLoading.postValue(false)
-                _isFetchingTest.postValue(false)
+            val questionResult = tryFetchQuizOnce(topic, isCustom)
+            if (questionResult == null) {
+                delay(5000) // Wait 5 seconds before retry
+                val retryResult = tryFetchQuizOnce(topic, isCustom)
+                if (retryResult == null) {
+                    _errorMesssage.postValue("Lỗi khi tạo đề bài. Vui lòng thử lại sau.")
+                } else {
+                    _testQuestions.postValue(retryResult)
+                }
+            } else {
+                _testQuestions.postValue(questionResult)
             }
+            _isLoading.postValue(false)
+            _isFetchingTest.postValue(false)
+        }
+    }
+
+    private suspend fun tryFetchQuizOnce(topic: String, isCustom: Boolean): List<QuestionData>? {
+        return try {
+            aiQuizService.generateQuiz(topic, isCustom)
+        } catch (e: Exception) {
+            Log.e("TestViewModel", "Error fetching test", e)
+            null
         }
     }
 

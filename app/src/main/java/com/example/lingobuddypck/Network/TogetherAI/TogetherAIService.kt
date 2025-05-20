@@ -98,12 +98,5 @@ data class AIGradingResult(
 
 data class PassageQuizData(
     val passage: String,
-    val questions: List<BlankQuestion>
-)
-
-data class BlankQuestion(
-    val id: String,
-    val sentence: String,
-    val options: Map<String, String>,
-    val correct_answer: String
+    val questions: List<QuestionData>
 )

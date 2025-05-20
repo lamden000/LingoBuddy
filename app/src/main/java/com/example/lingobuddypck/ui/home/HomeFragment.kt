@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.lingobuddypck.ChatWithAIActivity
 import com.example.lingobuddypck.ImageLearningActivity
 import com.example.lingobuddypck.LoginActivity
+import com.example.lingobuddypck.PassageQuizActivity
 import com.example.lingobuddypck.PronunciationActivity
 import com.example.lingobuddypck.R
 import com.example.lingobuddypck.RolePlayActivity
@@ -51,7 +52,7 @@ class HomeFragment : Fragment() {
             "Luyện phát âm bằng giọng nói" to PronunciationActivity::class.java,
             "Nhận diện & Học từ vựng từ hình ảnh" to ImageLearningActivity::class.java,
             "Nhập vai với AI" to RolePlayActivity::class.java,
-            "Học từ vựng & Ngữ pháp qua đoạn văn AI tạo" to TestActivity::class.java
+            "Học từ vựng & Ngữ pháp qua đoạn văn AI tạo" to PassageQuizActivity::class.java
         )
 
         buttonStartTest.setOnClickListener {

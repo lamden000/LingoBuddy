@@ -1,45 +1,31 @@
 package com.example.lingobuddypck.Factory.QuizService
 
-
 import android.content.Context
 import android.graphics.Color
 import android.os.CountDownTimer
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ProgressBar
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LiveData
-import androidx.recyclerview.widget.RecyclerView
-import com.example.lingobuddypck.Network.TogetherAI.AIGradingResult
-
 import com.example.lingobuddypck.Network.TogetherAI.QuestionData
 import com.example.lingobuddypck.Network.TogetherAI.UserAnswer
 import com.example.lingobuddypck.R
 import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
 
-
-/**
- * Utility class to manage quiz UI and logic, reusable across activities and fragments.
- */
-class TestUIManager(
+class PassageQuizUIManager(
     private val context: Context,
     private val lifecycleOwner: LifecycleOwner,
-    private val viewModel: QuizViewModel,
-    private val wordRepository: FirebaseWordRepository,
-    private val views: QuizViews,
-    private val onShowConfirmationDialog: (() -> Unit)? = null,
+    private val viewModel: PassageQuizViewModel, // Use the new PassageQuizViewModel
+    private val wordRepository: FirebaseWordRepository, // For saving words
+    private val views: PassageQuizViews, // Use the new PassageQuizViews
     private val onShowNavigationBar: (() -> Unit)? = null,
     private val onHideNavigationBar: (() -> Unit)? = null
 ) {
@@ -48,100 +34,54 @@ class TestUIManager(
     private val questionViews = mutableMapOf<String, RadioGroup>()
     private val feedbackViews = mutableMapOf<String, TextView>()
     private var isShowingGradingResult = false
-    private var originalButtonText:String
-
-    private var isProficiencyTestMode = false
-    private var currentTestCount = 0
-    private var totalCorrectAnswers = 0
-    private var totalQuestionsAnswered = 0
-    private val maxTests = 5
+    private var originalButtonText: String
 
     init {
-        originalButtonText=views.buttonStart.text.toString()
+        originalButtonText = views.buttonStart.text.toString()
         setupUI()
         setupObservers()
+        resetUIForStart() // Set initial UI state
     }
 
     private fun setupUI() {
         views.buttonStart.setOnClickListener {
-            onShowConfirmationDialog?.invoke() ?: startNewTestFlow()
+            startNewPassageQuizFlow()
         }
 
         views.buttonSubmit.setOnClickListener {
             if (isShowingGradingResult) {
-                // Trạng thái: Kết quả đang được hiển thị.
-                // Hành động của nút: xác nhận kết quả hoặc chuyển sang bước tiếp theo.
-                if (isProficiencyTestMode) {
-                    if (currentTestCount < maxTests - 1) {
-                        // Hành động: Chuyển sang bài kiểm tra tiếp theo trong chuỗi proficiency.
-                        currentTestCount++
-                        isShowingGradingResult = false // Quan trọng: Để lần nhấp submit tiếp theo là để nộp bài.
-                        viewModel.clearGradingResult() // Xóa kết quả cũ.
-
-                        // Đặt lại các thành phần UI liên quan đến việc hiển thị kết quả.
-                        views.textViewResult.isVisible = false
-                        feedbackViews.values.forEach { it.isVisible = false }
-                        // Giao diện tải sẽ được kích hoạt từ startNextProficiencyTest().
-                        // Văn bản nút sẽ được đặt thành "Nộp bài" bởi updateLoadingUI/renderQuestions.
-                        startNextProficiencyTest()
-                    } else {
-                        // Hành động: Hiển thị điểm proficiency cuối cùng và kết thúc chế độ proficiency.
-                        isProficiencyTestMode = false // Kết thúc proficiency mode.
-                        val finalScore = (totalCorrectAnswers * 2).coerceAtMost(100) // Giả sử công thức này đúng.
-                        saveProficiencyTestResult(finalScore)
-                        // Bây giờ, xác nhận và đặt lại về trạng thái màn hình ban đầu.
-                        confirmGradingResult()
-                    }
-                } else {
-                    // Hành động: Chế độ không phải proficiency, xác nhận kết quả và đặt lại.
-                    confirmGradingResult()
-                }
+                confirmGradingResult()
             } else {
-                // Trạng thái: Câu hỏi đang được hiển thị, chờ nộp bài.
-                // Hành động: Nộp câu trả lời cho bài kiểm tra hiện tại.
                 submitUserAnswers()
             }
         }
-        resetUIForStart()
     }
 
-    fun startProficiencyTestMode() {
-        isProficiencyTestMode = true
-        currentTestCount = 0
-        totalCorrectAnswers = 0
-        totalQuestionsAnswered = 0
-        startNextProficiencyTest()
-    }
-
-    private fun startNextProficiencyTest() {
-        viewModel.fetchTest(getRandomTopicFromAssets(context), false)
-        resetUIForLoading()
-    }
-
-    fun startNewTestFlow() {
-        if(views.customTopicEditTxt!=null)
-        {
-            if (views.customTopicEditTxt.text.toString().isNotBlank())
-                viewModel.fetchTest(views.customTopicEditTxt.text.toString(),true)
-            else
-                viewModel.fetchTest(getRandomTopicFromAssets(context),false)
-        }
-        else
-            viewModel.fetchTest("null",true)
+    private fun startNewPassageQuizFlow() {
+        val topic = views.customTopicEditTxt?.text.toString().trim()
+        val isCustom = topic.isNotBlank()
+        viewModel.fetchPassageTest(if (isCustom) topic else getRandomTopicFromAssets(context), isCustom)
         resetUIForLoading()
     }
 
     private fun submitUserAnswers() {
         val userAnswers = mutableListOf<UserAnswer>()
-        var allAnswered = true
+        val currentQuestions = viewModel.passageQuizData.value?.questions
 
-        questionViews.forEach { (questionId, radioGroup) ->
-            val selectedRadioButtonId = radioGroup.checkedRadioButtonId
+        if (currentQuestions.isNullOrEmpty()) {
+            Toast.makeText(context, "Không có câu hỏi để nộp.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        var allAnswered = true
+        currentQuestions.forEach { question ->
+            val radioGroup = questionViews[question.id]
+            val selectedRadioButtonId = radioGroup?.checkedRadioButtonId ?: -1
             if (selectedRadioButtonId != -1) {
-                val selectedRadioButton = radioGroup.findViewById<RadioButton>(selectedRadioButtonId)
-                val answerKey = selectedRadioButton.tag as? String
+                val selectedRadioButton = radioGroup?.findViewById<RadioButton>(selectedRadioButtonId)
+                val answerKey = selectedRadioButton?.tag as? String
                 if (answerKey != null) {
-                    userAnswers.add(UserAnswer(questionId, answerKey))
+                    userAnswers.add(UserAnswer(question.id, answerKey))
                 } else {
                     allAnswered = false
                 }
@@ -150,8 +90,8 @@ class TestUIManager(
             }
         }
 
-        if (allAnswered && userAnswers.size == viewModel.testQuestions.value?.size) {
-            viewModel.submitAnswers(userAnswers)
+        if (allAnswered && userAnswers.size == currentQuestions.size) {
+            viewModel.submitPassageAnswers(userAnswers, currentQuestions)
         } else {
             Toast.makeText(context, "Vui lòng trả lời tất cả các câu hỏi.", Toast.LENGTH_SHORT).show()
         }
@@ -165,18 +105,17 @@ class TestUIManager(
         views.buttonSubmit.isVisible = false
         views.buttonStart.isVisible = true
         views.scrollView.isVisible = false
-        views.recyclerView?.isVisible = true
-        views.customTopicEditTxt?.isVisible = true
+        views.initialStateContainer.isVisible = true // Show initial state UI
         views.scrollView.alpha = 1f
         onShowNavigationBar?.invoke()
         viewModel.clearGradingResult()
-        viewModel.clearQuestions()
+        viewModel.clearPassageQuizData() // Clear passage data in ViewModel
     }
 
     private fun setupObservers() {
         observeLoading()
-        observeFetchingTest()
-        observeTestQuestions()
+        observeFetchingState()
+        observePassageQuizData()
         observeGradingResult()
         observeErrorMessage()
     }
@@ -192,19 +131,19 @@ class TestUIManager(
         views.progressBar.isVisible = isLoading
         views.textViewLoadingHint.isVisible = isLoading
         views.textViewCountdown.isVisible = isLoading
+        views.aiAvatar.isVisible = isLoading
+
         views.buttonStart.isEnabled = !isLoading
         views.buttonSubmit.isEnabled = !isLoading
         views.scrollView.alpha = if (isLoading) 0.1f else 1f
-        views.aiAvatar.isVisible = isLoading
 
         if (!isLoading) {
             views.textViewCountdown.isVisible = false
-            if (viewModel.testQuestions.value != null && !isShowingGradingResult) {
+            if (viewModel.passageQuizData.value != null && !isShowingGradingResult) {
                 views.buttonSubmit.isVisible = true
                 views.buttonSubmit.text = "Nộp bài"
                 views.buttonStart.isVisible = false
-                views.customTopicEditTxt?.isVisible = false
-                views.recyclerView?.isVisible = false
+                views.initialStateContainer.isVisible = false
                 onHideNavigationBar?.invoke()
             } else if (viewModel.gradingResult.value == null && viewModel.errorMessage.value != null) {
                 resetUIForStart()
@@ -212,14 +151,14 @@ class TestUIManager(
         }
     }
 
-    private fun observeFetchingTest() {
-        viewModel.isFetchingTest.observe(lifecycleOwner) { isFetchingTest ->
-            val fetchingTestMessages = listOf(
-                "⌛ Một chút thôi... AI đang gãi đầu nghĩ câu hỏi.",
+    private fun observeFetchingState() {
+        viewModel.isFetchingPassageTest.observe(lifecycleOwner) { isFetchingTest ->
+            val fetchingMessages = listOf(
+                "⌛ Một chút thôi... AI đang gãi đầu nghĩ đoạn văn.",
                 "🧠 Đang suy nghĩ... đừng rời đi nhé!",
-                "🤔 Đang tạo câu hỏi siêu ngầu...",
+                "🤔 Đang tạo đoạn văn và câu hỏi siêu ngầu...",
                 "🌀 Trí tuệ nhân tạo đang uống cà phê...",
-                "📚 Đang tham khảo vài triệu tài liệu."
+                "📚 Đang tham khảo tài liệu cho đoạn văn."
             )
             val gradingMessages = listOf(
                 "🤖 AI đang chấm điểm như thầy giáo khó tính.",
@@ -228,20 +167,22 @@ class TestUIManager(
                 "💡 Đang kiểm tra từng câu trả lời.",
                 "📉 Chấm xong sai là tụt mood liền á..."
             )
-            val text = if (isFetchingTest) fetchingTestMessages.random() else gradingMessages.random()
+            val text = if (isFetchingTest) fetchingMessages.random() else gradingMessages.random()
             views.textViewLoadingHint.text = text
         }
     }
 
-    private fun observeTestQuestions() {
-        viewModel.testQuestions.observe(lifecycleOwner) { questions ->
+    private fun observePassageQuizData() {
+        viewModel.passageQuizData.observe(lifecycleOwner) { passageQuizData ->
             if (isShowingGradingResult) return@observe
+
             views.questionsContainer.removeAllViews()
             questionViews.clear()
             feedbackViews.clear()
 
-            if (!questions.isNullOrEmpty()) {
-                renderQuestions(questions)
+            if (passageQuizData != null) {
+                views.passageTextView.text = passageQuizData.passage
+                renderQuestions(passageQuizData.questions)
             } else {
                 views.scrollView.isVisible = false
                 views.buttonSubmit.isVisible = false
@@ -252,15 +193,14 @@ class TestUIManager(
 
     private fun renderQuestions(questions: List<QuestionData>) {
         views.scrollView.isVisible = true
-        views.customTopicEditTxt?.isVisible = false
-        views.recyclerView?.isVisible = false
+        views.initialStateContainer.isVisible = false
         onHideNavigationBar?.invoke()
 
         questions.forEachIndexed { index, q -> addQuestionToLayout(index, q) }
         val spacer = View(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                context.resources.getDimensionPixelSize(R.dimen.scroll_bottom_padding)
+                context.resources.getDimensionPixelSize(R.dimen.scroll_bottom_padding) // Assuming you have this dimen
             )
         }
         views.questionsContainer.addView(spacer)
@@ -282,8 +222,6 @@ class TestUIManager(
             isShowingGradingResult = true
             val correct = result.score
             val total = result.total_questions
-            totalCorrectAnswers += correct
-            totalQuestionsAnswered += total
 
             views.textViewResult.text = "Kết quả: $correct/$total câu đúng."
             views.textViewResult.isVisible = true
@@ -291,8 +229,10 @@ class TestUIManager(
             views.buttonSubmit.isEnabled = true
             views.buttonStart.isVisible = false
 
+            feedbackViews.values.forEach { it.isVisible = false } // Clear previous feedback
+
             result.feedback.forEach { (qid, fb) ->
-                val question = viewModel.testQuestions.value?.find { it.id == qid }
+                val question = viewModel.passageQuizData.value?.questions?.find { it.id == qid }
                 val correctDisplay = question?.options?.get(question.correct_answer)?.let {
                     "${question.correct_answer.uppercase()}. $it"
                 } ?: question?.correct_answer?.uppercase() ?: "N/A"
@@ -300,25 +240,17 @@ class TestUIManager(
                 feedbackViews[qid]?.apply {
                     isVisible = true
                     if (fb.status == "correct") {
-                        setTextColor(Color.parseColor("#228B22"))
+                        setTextColor(Color.parseColor("#228B22")) // Green
                         text = "✅ Trả lời đúng"
                     } else {
-                        setTextColor(Color.parseColor("#B22222"))
+                        setTextColor(Color.parseColor("#B22222")) // Red
                         text = "❌ Trả lời sai.\nĐáp án đúng: $correctDisplay.\nGiải thích: ${fb.explanation ?: "Không có giải thích."}"
                     }
                 }
             }
 
             views.scrollView.post { views.scrollView.fullScroll(ScrollView.FOCUS_UP) }
-            updateSubmitButtonTextAfterGrading()
-        }
-    }
-
-    private fun updateSubmitButtonTextAfterGrading() {
-        views.buttonSubmit.text = when {
-            isProficiencyTestMode && currentTestCount < maxTests - 1 -> "Bài tiếp theo (${currentTestCount + 2}/$maxTests)" // currentTestCount là số bài đã hoàn thành (0-indexed)
-            isProficiencyTestMode && currentTestCount == maxTests - 1 -> "Xem điểm đánh giá"
-            else -> "Xác nhận" // Dành cho chế độ không phải proficiency hoặc sau khi hoàn thành proficiency
+            views.buttonSubmit.text = "Xác nhận"
         }
     }
 
@@ -332,7 +264,6 @@ class TestUIManager(
         }
     }
 
-    // Countdown helper
     private fun startCountdown() {
         countdownTimer?.cancel()
         countdownTimer = object : CountDownTimer(60000, 1000) {
@@ -350,13 +281,6 @@ class TestUIManager(
         countdownTimer?.cancel()
     }
 
-
-
-    private fun saveProficiencyTestResult(score: Int) {
-        // TODO: lưu vào Firebase, Room hoặc chia sẻ ViewModel
-        Toast.makeText(context, "Điểm đánh giá: $score/100", Toast.LENGTH_LONG).show()
-    }
-
     private fun resetUIForStart() {
         views.questionsContainer.removeAllViews()
         questionViews.clear()
@@ -364,26 +288,32 @@ class TestUIManager(
         views.scrollView.isVisible = false
         views.buttonSubmit.isVisible = false
         views.textViewResult.isVisible = false
+        views.progressBar.isVisible = false
         views.textViewLoadingHint.isVisible = false
         views.textViewCountdown.isVisible = false
         views.aiAvatar.isVisible = false
         views.scrollView.alpha = 1f
         views.buttonStart.isVisible = true
-        views.recyclerView?.isVisible = true
-        views.customTopicEditTxt?.isVisible = true
+        views.initialStateContainer.isVisible = true // Show initial state UI
+        views.recyclerView?.isVisible = true // If you use it for topics
+        views.customTopicEditTxt?.isVisible = true // If you use it for custom topics
         onShowNavigationBar?.invoke()
         views.buttonStart.text = originalButtonText
     }
 
     private fun resetUIForLoading() {
-        views.scrollView.isVisible = true
+        views.scrollView.isVisible = false
         views.buttonSubmit.isVisible = false
         views.buttonStart.isVisible = false
-        views.customTopicEditTxt?.isVisible = false
-        views.recyclerView?.isVisible = false
+        views.initialStateContainer.isVisible = false
         views.textViewResult.isVisible = false
         feedbackViews.values.forEach { it.isVisible = false }
         onHideNavigationBar?.invoke()
+        // Show loading indicators
+        views.progressBar.isVisible = true
+        views.textViewLoadingHint.isVisible = true
+        views.textViewCountdown.isVisible = true
+        views.aiAvatar.isVisible = true
     }
 
     private fun addQuestionToLayout(index: Int, questionData: QuestionData) {
@@ -391,20 +321,15 @@ class TestUIManager(
         val questionView = inflater.inflate(R.layout.item_test_question, views.questionsContainer, false)
 
         val tvQuestionNumber = questionView.findViewById<TextView>(R.id.textViewQuestionNumber)
-        val tvQuestionContent = questionView.findViewById<TextView>(R.id.textViewQuestionContent)
+        val tvQuestionContent = questionView.findViewById<TextView>(R.id.textViewQuestionContent) // Keep this reference
         val rgOptions = questionView.findViewById<RadioGroup>(R.id.radioGroupOptions)
         val tvFeedback = questionView.findViewById<TextView>(R.id.textViewFeedback)
 
-        tvQuestionNumber.text = "Câu ${index + 1}:"
-        tvQuestionContent.text = questionData.question_text
-        tvQuestionContent.enableSelectableSaveAction(context) { selectedText, note ->
-            wordRepository.saveWord(
-                word = selectedText,
-                note = note,
-                onSuccess = { Toast.makeText(context, "Đã lưu vào từ điển của bạn.", Toast.LENGTH_SHORT).show() },
-                onFailure = { e -> Toast.makeText(context, "Lỗi khi lưu: ${e.message}", Toast.LENGTH_SHORT).show() }
-            )
-        }
+        // CORRECTED LINE: Using proper Kotlin string interpolation
+        tvQuestionNumber.text = "Blank ${index + 1}:" // Clearly indicate the blank number
+
+        // CORRECTED LINE: Standard Kotlin for setting visibility
+        tvQuestionContent.visibility = View.GONE // <--- HIDE THIS TEXTVIEW
 
         val sortedOptions = questionData.options.entries.sortedBy { it.key }
         sortedOptions.forEach { (optionKey, optionText) ->
@@ -419,9 +344,16 @@ class TestUIManager(
         questionViews[questionData.id] = rgOptions
         feedbackViews[questionData.id] = tvFeedback
     }
-    fun getRandomTopicFromAssets(context: Context): String {
-        val inputStream = context.assets.open("topics.txt")
-        val topics = inputStream.bufferedReader().useLines { it.toList() }
-        return topics.random()
+
+    private fun getRandomTopicFromAssets(context: Context): String {
+        // Assuming "topics.txt" exists in your assets folder
+        return try {
+            val inputStream = context.assets.open("topics.txt")
+            val topics = inputStream.bufferedReader().useLines { it.toList() }
+            topics.random()
+        } catch (e: Exception) {
+            Log.e("PassageQuizUIManager", "Error reading topics from assets: ${e.message}")
+            "General English" // Fallback topic
+        }
     }
 }

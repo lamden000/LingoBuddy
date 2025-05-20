@@ -127,9 +127,10 @@ class AiQuizService(
 
         The passage should have **at least 5 blanks**, each blank representing a missing word or phrase.
         The missing parts should be **diverse**, including grammar points, vocabulary, and idiomatic expressions.
+        Each blank in the passage should be clearly marked with a numbered placeholder like (1), (2), (3), etc.
 
         For each blank, provide:
-        - The full sentence with the blank (e.g., "He ___ to the store.")
+        - An "id" corresponding to the blank number (e.g., "blank1" for blank (1))
         - Four multiple-choice options labeled a, b, c, d
         - The correct answer key (a, b, c, or d)
 
@@ -141,25 +142,23 @@ class AiQuizService(
         Return the result in **pure JSON format only**, structured as below:
         ```json
         {
-          "passage": "Full passage text here, with numbered blanks like (1), (2), ...",
+          "passage": "Full passage text here, with numbered blanks like (1), (2), (3), etc. For example: 'The cat (1)___ on the mat. It was (2)___ very softly.'",
           "questions": [
             {
               "id": "blank1",
-              "sentence": "He (1) ___ to the store every morning.",
               "options": {
-                "a": "go",
-                "b": "goes",
-                "c": "went",
-                "d": "gone"
+                "a": "slept",
+                "b": "sleeps",
+                "c": "sleeping",
+                "d": "has slept"
               },
-              "correct_answer": "b"
+              "correct_answer": "a"
             },
             {
               "id": "blank2",
-              "sentence": "...",
-              "options": { "a": "...", "b": "...", "c": "...", "d": "..." },
-              "correct_answer": "c"
-            }
+              "options": { "a": "purring", "b": "purrs", "c": "purred", "d": "to purr" },
+              "correct_answer": "a"
+            },
             // at least 5 items
           ]
         }
@@ -226,31 +225,31 @@ class AiQuizService(
             Below is a multiple-choice quiz with correct answers and the user's answers.
             Please grade it and return how many answers are correct.
             For each question, provide the status ("correct" or "incorrect").
-            If the answer is incorrect, provide a brief "explanation" field detailing why the user's answer is wrong and what the correct answer is, based on the provided question text and options.
-            Write explanation in Vietnamese.
-
+            FOR EVERY INCORRECT ANSWER, YOU MUST PROVIDE A DETAILED "explanation" FIELD IN VIETNAMESE.
+            The explanation should clearly state why the user's chosen answer is wrong and what the correct answer is, based on the provided question text and options.
+        
             Quiz with correct answers (in JSON format):
             ```json
             $questionsJsonForGrading
             ```
-
+        
             User's answers (format: question_identifier,choice;):
             $userAnswersString
-
-            Return a response in **pure JSON format**, no explanation, no extra text outside the JSON object. The JSON structure should be:
+        
+            Return a response in **pure JSON format**, no explanation, no extra text outside the JSON object. The JSON structure MUST use the **exact 'id' values from the provided quiz questions (e.g., "q1", "blank1", etc.) as keys** in the "feedback" object:
             ```json
             {
               "score": [number_of_correct_answers],
-              "total_questions": ${questions.size}, // Make total_questions dynamic
+              "total_questions": ${questions.size},
               "feedback": {
-                "q1": {
+                "id_of_question_1": { 
                   "status": "correct"
                 },
-                "q2": {
+                "id_of_question_2": { 
                   "status": "incorrect",
                   "explanation": "Câu trả lời của bạn [user_choice_key] sai. Đáp án đúng là [correct_choice_key] bởi vì..."
                 },
-                // ... for all questions (q1, q2, q3...)
+                // ... for all questions, using their original IDs (e.g., "blank1", "q1", etc.)
               }
             }
             ```

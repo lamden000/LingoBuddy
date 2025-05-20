@@ -13,6 +13,7 @@ import com.example.lingobuddypck.Factory.QuizService.AiQuizService
 import com.example.lingobuddypck.Factory.QuizService.QuizViewModel
 import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.ViewModel.Repository.SavedWord
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -82,27 +83,39 @@ class SavedWordsViewModel(
         }
     }
     override fun fetchTest(topic: String, isCustom: Boolean) {
-        // ViewModel updates its own loading state
         _isLoading.value = true
-        _testQuestions.value = null // Clear previous state
+        _testQuestions.value = null
         _gradingResult.value = null
         _errorMesssage.value = null
-        _isFetchingTest.value=true
+        _isFetchingTest.value = true
+
         viewModelScope.launch {
-            try {
-                // Call the service function
-                val questions = aiQuizService.generateQuiz("Tạo đề bài (đảm bảo đủ 10 câu hỏi) gồm các từ: "+getRandomSavedWordsString(), true)
-                // Update ViewModel LiveData with the result
-                _testQuestions.postValue(questions)
-            } catch (e: Exception) {
-                // Handle exceptions thrown by the service
-                Log.e("TestViewModel", "Error fetching test", e) // Log the error
-                _errorMesssage.postValue(e.message)
-            } finally {
-                // ViewModel updates its own loading state
-                _isLoading.postValue(false)
-                _isFetchingTest.postValue(false)
+            val questionResult = tryFetchQuizOnce()
+            if (questionResult == null) {
+                delay(5000) // Wait 5 seconds before retry
+                val retryResult = tryFetchQuizOnce()
+                if (retryResult == null) {
+                    _errorMesssage.postValue("Lỗi khi tạo đề bài. Vui lòng thử lại sau.")
+                } else {
+                    _testQuestions.postValue(retryResult)
+                }
+            } else {
+                _testQuestions.postValue(questionResult)
             }
+            _isLoading.postValue(false)
+            _isFetchingTest.postValue(false)
+        }
+    }
+
+    private suspend fun tryFetchQuizOnce(): List<QuestionData>? {
+        return try {
+            aiQuizService.generateQuiz(
+                "Tạo đề bài (đảm bảo đủ 10 câu hỏi) gồm các từ: " + getRandomSavedWordsString(),
+                true
+            )
+        } catch (e: Exception) {
+            Log.e("TestViewModel", "Error fetching test", e)
+            null
         }
     }
 

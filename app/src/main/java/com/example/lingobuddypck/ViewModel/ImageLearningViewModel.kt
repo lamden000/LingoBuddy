@@ -11,9 +11,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lingobuddypck.Network.RetrofitClient
-import com.example.lingobuddypck.Network.TogetherAI.ChatImageResponse
-import com.example.lingobuddypck.Network.TogetherAI.ChatRequestImage
-import com.example.lingobuddypck.Network.TogetherAI.Message
+import com.example.lingobuddypck.Services.ChatImageResponse
+import com.example.lingobuddypck.Services.ChatRequestImage
+import com.example.lingobuddypck.Services.Message
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

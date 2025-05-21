@@ -1,6 +1,6 @@
 package com.example.lingobuddypck.Network
 
-import com.example.lingobuddypck.Network.TogetherAI.TogetherApi
+import com.example.lingobuddypck.Services.TogetherApi
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

@@ -1,4 +1,4 @@
-package com.example.lingobuddypck
+package com.example.lingobuddypck.ui
 
 import android.os.Bundle
 import android.view.View
@@ -9,6 +9,7 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.example.lingobuddypck.R
 import com.example.lingobuddypck.databinding.ActivityNavigationBinding
 
 class NavigationActivity : AppCompatActivity() {

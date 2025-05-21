@@ -1,16 +1,15 @@
-package com.example.lingobuddypck.Factory.QuizService
-import android.content.Context
-import com.example.lingobuddypck.Network.TogetherAI.AIGradingResult
-import com.example.lingobuddypck.Network.TogetherAI.AIQuestionResponse
-import com.example.lingobuddypck.Network.TogetherAI.ChatRequest
-import com.example.lingobuddypck.Network.TogetherAI.Message
-import com.example.lingobuddypck.Network.TogetherAI.PassageQuizData
-import com.example.lingobuddypck.Network.TogetherAI.QuestionData
-import com.example.lingobuddypck.Network.TogetherAI.TogetherApi
-import com.example.lingobuddypck.Network.TogetherAI.UserAnswer
+package com.example.lingobuddypck.Services.QuizService
+import android.util.Log
+import com.example.lingobuddypck.Services.AIGradingResult
+import com.example.lingobuddypck.Services.AIQuestionResponse
+import com.example.lingobuddypck.Services.ChatRequest
+import com.example.lingobuddypck.Services.Message
+import com.example.lingobuddypck.Services.PassageQuizData
+import com.example.lingobuddypck.Services.QuestionData
+import com.example.lingobuddypck.Services.TogetherApi
+import com.example.lingobuddypck.Services.UserAnswer
 import com.google.gson.Gson
 import retrofit2.awaitResponse
-import java.io.IOException
 
 class AiQuizService(
     private val gson: Gson,
@@ -51,7 +50,7 @@ class AiQuizService(
         val type = randomType.random()
 
         val prompt = """
-            Please generate a multiple-choice quiz with 10 questions on the topic "$type" "$topic" .Focus on English learning
+            Please generate a multiple-choice quiz with 10 questions on the topic "$type" - "$topic" .Focus on English learning
             Each question must have four options: a, b, c, and d.
             For each question, provide:
             - The question text
@@ -103,12 +102,13 @@ class AiQuizService(
 
         val responseBody = response.body()
         val responseJson = responseBody?.output?.choices?.getOrNull(0)?.text
+        Log.e("Response",responseJson.toString())
 
         if (!responseJson.isNullOrBlank()) {
             val actualJson = extractJson(responseJson)
             try {
-                val aiResponse = gson.fromJson(actualJson, AIQuestionResponse::class.java) // Assuming AIQuestionResponse has a List<QuestionData> field named 'questions'
-                if (aiResponse.questions.size == 10) { // Check the expected number of questions
+                val aiResponse = gson.fromJson(actualJson, AIQuestionResponse::class.java)
+                if (aiResponse.questions.size == 10) {
                     return aiResponse.questions
                 } else {
                     throw Exception("AI không trả về đủ 10 câu hỏi.")

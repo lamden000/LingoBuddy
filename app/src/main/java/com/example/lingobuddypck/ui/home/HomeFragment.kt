@@ -10,14 +10,13 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.lingobuddypck.ChatWithAIActivity
-import com.example.lingobuddypck.ImageLearningActivity
-import com.example.lingobuddypck.LoginActivity
-import com.example.lingobuddypck.PassageQuizActivity
-import com.example.lingobuddypck.PronunciationActivity
+import com.example.lingobuddypck.ui.ChatWithAIActivity
+import com.example.lingobuddypck.ui.ImageLearningActivity
+import com.example.lingobuddypck.ui.PassageQuizActivity
+import com.example.lingobuddypck.ui.PronunciationActivity
 import com.example.lingobuddypck.R
-import com.example.lingobuddypck.RolePlayActivity
-import com.example.lingobuddypck.TestActivity
+import com.example.lingobuddypck.ui.RolePlayActivity
+import com.example.lingobuddypck.ui.TestActivity
 import com.example.lingobuddypck.adapter.FeatureAdapter
 import com.example.lingobuddypck.data.Feature
 

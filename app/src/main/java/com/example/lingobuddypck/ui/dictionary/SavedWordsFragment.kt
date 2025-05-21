@@ -1,19 +1,9 @@
 package com.example.lingobuddypck.ui.dictionary
-import android.content.Context
-import android.graphics.Color
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.ProgressBar
-import android.widget.RadioButton
-import android.widget.RadioGroup
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.isVisible
@@ -21,19 +11,16 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.lingobuddypck.Factory.QuizService.AiQuizService
-import com.example.lingobuddypck.Factory.QuizService.QuizViews
-import com.example.lingobuddypck.Factory.QuizService.TestUIManager
-import com.example.lingobuddypck.NavigationActivity
+import com.example.lingobuddypck.Services.QuizService.AiQuizService
+import com.example.lingobuddypck.Services.QuizService.NormalQuiz.QuizViews
+import com.example.lingobuddypck.Services.QuizService.NormalQuiz.TestUIManager
+import com.example.lingobuddypck.ui.NavigationActivity
 import com.example.lingobuddypck.Network.RetrofitClient
-import com.example.lingobuddypck.Network.TogetherAI.QuestionData
-import com.example.lingobuddypck.Network.TogetherAI.UserAnswer
 import com.example.lingobuddypck.R
-import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
-import com.example.lingobuddypck.ViewModel.Repository.SavedWord
+import com.example.lingobuddypck.Repository.FirebaseWordRepository
+import com.example.lingobuddypck.Repository.SavedWord
 import com.example.lingobuddypck.adapter.SavedWordListItem
 import com.example.lingobuddypck.adapter.SavedWordsAdapter
-import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
 import com.google.android.material.dialog.MaterialAlertDialogBuilder // Hoặc AlertDialog thông thường
 import com.google.gson.Gson
 class SavedWordsFragment : Fragment() {

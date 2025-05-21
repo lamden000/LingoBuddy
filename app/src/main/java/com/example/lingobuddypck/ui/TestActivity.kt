@@ -1,17 +1,18 @@
-package com.example.lingobuddypck
+package com.example.lingobuddypck.ui
 
 
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 
-import com.example.lingobuddypck.Factory.QuizService.AiQuizService
-import com.example.lingobuddypck.Factory.QuizService.QuizViewModel
-import com.example.lingobuddypck.Factory.QuizService.QuizViews
-import com.example.lingobuddypck.Factory.QuizService.TestUIManager
+import com.example.lingobuddypck.Services.QuizService.AiQuizService
+import com.example.lingobuddypck.Services.QuizService.NormalQuiz.QuizViewModel
+import com.example.lingobuddypck.Services.QuizService.NormalQuiz.QuizViews
+import com.example.lingobuddypck.Services.QuizService.NormalQuiz.TestUIManager
 import com.example.lingobuddypck.Network.RetrofitClient
+import com.example.lingobuddypck.R
 
-import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
+import com.example.lingobuddypck.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.ViewModel.TestViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
@@ -26,7 +27,7 @@ class TestActivity : AppCompatActivity() {
     private val viewModel: TestViewModel by viewModels {
         TestViewModel.Factory(aiQuizService)
     }
-    private lateinit var uiManager:TestUIManager
+    private lateinit var uiManager: TestUIManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +44,6 @@ class TestActivity : AppCompatActivity() {
             textViewLoadingHint = findViewById(R.id.textViewLoadingHint),
             textViewCountdown = findViewById(R.id.textViewCountdown),
             aiAvatar = findViewById(R.id.aiAvatarLoading),
-            customTopicEditTxt = findViewById(R.id.editTextCustomTopic)
         )
 
         uiManager= TestUIManager(

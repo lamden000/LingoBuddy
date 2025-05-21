@@ -8,9 +8,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
-import com.example.lingobuddypck.Network.TogetherAI.Message
+import com.example.lingobuddypck.Services.Message
 import com.example.lingobuddypck.R
-import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
+import com.example.lingobuddypck.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
 
 class ChatAdapter(private val messages: MutableList<Message>, private val context: Context,

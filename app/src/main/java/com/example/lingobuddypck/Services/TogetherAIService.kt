@@ -1,4 +1,4 @@
-package com.example.lingobuddypck.Network.TogetherAI
+package com.example.lingobuddypck.Services
 import android.net.Uri
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
@@ -20,8 +20,9 @@ interface TogetherApi {
 data class ChatRequest(
     val model: String,
     val messages: List<Message>,
+    val top_k: Int=20,
     val max_tokens: Int = 2000,
-    val temperature: Double = 1.3
+    val temperature: Double = 0.7
 )
 
 data class Message(

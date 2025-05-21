@@ -1,4 +1,4 @@
-package com.example.lingobuddypck.ViewModel.Repository
+package com.example.lingobuddypck.Repository
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue

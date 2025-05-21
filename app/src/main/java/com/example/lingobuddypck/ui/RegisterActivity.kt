@@ -1,4 +1,4 @@
-package com.example.lingobuddypck
+package com.example.lingobuddypck.ui
 
 import android.content.Intent
 import android.os.Bundle
@@ -8,8 +8,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import com.example.lingobuddypck.R
 import com.example.lingobuddypck.ViewModel.RegisterViewModel
-import com.google.firebase.auth.FirebaseAuth
 
 class RegisterActivity : AppCompatActivity() {
 

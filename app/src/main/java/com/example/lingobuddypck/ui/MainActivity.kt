@@ -1,4 +1,4 @@
-package com.example.lingobuddypck
+package com.example.lingobuddypck.ui
 
 import android.content.Intent
 import android.os.Bundle

@@ -1,18 +1,15 @@
-package com.example.lingobuddypck
+package com.example.lingobuddypck.ui
 
 import android.os.Bundle
-import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.viewModels
-import com.example.lingobuddypck.Factory.QuizService.AiQuizService
-import com.example.lingobuddypck.Factory.QuizService.PassageQuizUIManager
-import com.example.lingobuddypck.Factory.QuizService.PassageQuizViews
+import com.example.lingobuddypck.Services.QuizService.AiQuizService
+import com.example.lingobuddypck.Services.QuizService.PassageQuiz.PassageQuizUIManager
 import com.example.lingobuddypck.Network.RetrofitClient
+import com.example.lingobuddypck.R
+import com.example.lingobuddypck.Services.QuizService.PassageQuiz.PassageQuizViews
 import com.example.lingobuddypck.ViewModel.PassageQuizViewModelImpl
-import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
-import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
+import com.example.lingobuddypck.Repository.FirebaseWordRepository
 import com.google.gson.Gson // Your Gson instance
 
 class PassageQuizActivity : AppCompatActivity() {
@@ -30,25 +27,10 @@ class PassageQuizActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_passage_quiz)
 
-        val passageTextView = findViewById<TextView>(R.id.passageTextView)
-
-        passageTextView.enableSelectableSaveAction(this) { selectedText, note ->
-            FirebaseWordRepository().saveWord(
-                word = selectedText,
-                note = note,
-                onSuccess = {
-                    Toast.makeText(this, "Đã lưu \"$selectedText\"!", Toast.LENGTH_SHORT).show()
-                },
-                onFailure = {
-                    Toast.makeText(this, "Lỗi khi lưu từ: ${it.message}", Toast.LENGTH_SHORT).show()
-                }
-            )
-        }
-
         // Instantiate the PassageQuizViews data class with your layout elements
         val views = PassageQuizViews(
             progressBar = findViewById(R.id.progressBar),
-            passageTextView ,
+            passageTextView = findViewById(R.id.passageTextView) ,
             questionsContainer = findViewById(R.id.questionsContainer),
             buttonSubmit = findViewById(R.id.buttonSubmit),
             buttonStart = findViewById(R.id.buttonStart),

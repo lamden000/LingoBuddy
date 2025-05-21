@@ -1,13 +1,8 @@
-package com.example.lingobuddypck.Factory
+package com.example.lingobuddypck.Services
 
-import com.example.lingobuddypck.Network.TogetherAI.ChatRequest
-import com.example.lingobuddypck.Network.TogetherAI.Message
-import com.example.lingobuddypck.Network.TogetherAI.PronunciationFeedback
-import com.example.lingobuddypck.Network.TogetherAI.TogetherApi
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject // or import org.json.JSONArray;
 import retrofit2.awaitResponse
 
 class PronunciationAiService(
@@ -21,22 +16,23 @@ class PronunciationAiService(
         return text.replace(regex, "").trim() // Replace found matches with empty string
     }
 
-    suspend fun generateReferenceText(topic: String): String {
+    suspend fun generateReferenceText(topic: String,isCustom:Boolean): String {
         val prompt = """
             Generate a concise English sentence (around 10-15 words) suitable for pronunciation practice. The sentence should be related to "$topic".
             Ensure the sentence is natural and grammatically correct.
-            If Topic is empty choose a random topic yourself
             Return only the sentence, nothing else.
             Example: "The quick brown fox jumps over the lazy dog."
             Topic: "$topic"
             Sentence:
         """.trimIndent()
 
-        // Make sure to use "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free" here
-        val request = ChatRequest(model = "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free", messages = listOf(
-            Message("user", prompt)
-        ), temperature = 0.7)
+        val model = if (isCustom) "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free" else "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
 
+        val request = ChatRequest(
+            model,temperature=1.3, messages = listOf(
+                Message("user", prompt)
+            )
+        )
         val response = retrofitClient.chatWithAI(request).awaitResponse()
 
         return if (response.isSuccessful) {
@@ -73,7 +69,7 @@ class PronunciationAiService(
         """.trimIndent()
 
         // Make sure to use "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free" here
-        val request = ChatRequest(model = "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free", messages = listOf(
+        val request = ChatRequest(model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", messages = listOf(
             Message("user", prompt)
         ), temperature = 0.7)
 

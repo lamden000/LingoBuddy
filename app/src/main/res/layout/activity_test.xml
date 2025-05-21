@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".TestActivity">
+    tools:context=".ui.TestActivity">
 
     <ScrollView
         android:id="@+id/scrollViewTest"
@@ -61,21 +61,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="Kết quả: 3/5" />
-
-    <EditText
-        android:id="@+id/editTextCustomTopic"
-        android:layout_width="300dp"
-        android:layout_height="46dp"
-        android:ems="10"
-        android:inputType="text"
-        android:text=""
-        android:hint="Nhập chủ đề tùy chọn nếu muốn"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.497"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.394" />
 
     <TextView
         android:id="@+id/textViewLoadingHint"

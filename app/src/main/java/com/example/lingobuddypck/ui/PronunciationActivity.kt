@@ -1,4 +1,4 @@
-package com.example.lingobuddypck
+package com.example.lingobuddypck.ui
 
 import android.content.Intent
 import android.os.Bundle
@@ -14,15 +14,20 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.CountDownTimer
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.ProgressBar
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.lingobuddypck.Factory.PronunciationAiService
+import com.example.lingobuddypck.Services.PronunciationAiService
 import com.example.lingobuddypck.Network.RetrofitClient
-import com.example.lingobuddypck.Network.TogetherAI.PronunciationFeedback
+import com.example.lingobuddypck.R
+import com.example.lingobuddypck.Services.PronunciationFeedback
 import com.example.lingobuddypck.ViewModel.PronunciationViewModel
+import com.example.lingobuddypck.ui.utils.TopicUtils
 import com.google.android.material.textfield.TextInputEditText
 import com.google.gson.Gson
 class PronunciationActivity : AppCompatActivity() {
@@ -72,13 +77,38 @@ class PronunciationActivity : AppCompatActivity() {
         }
 
         btnGenerateReference.setOnClickListener {
-            val topic = etTopicInput.text.toString().trim()
-            viewModel.generateNewReferenceText(topic)
+            btnGenerateReference.isEnabled = false
+            if( !etTopicInput.text.isNullOrEmpty()) {
+                val topic = etTopicInput.text.toString().trim()
+                viewModel.generateNewReferenceText(topic,true)
+            }
+            else
+            {
+                viewModel.generateNewReferenceText(TopicUtils.getRandomTopicFromAssets(this),false)
+            }
         }
     }
 
     private fun setupObservers() {
         viewModel.referenceText.observe(this) { text ->
+            if(text!="Hello, How are you today?") {
+                val originalText = btnGenerateReference.text.toString()
+                val cooldownSeconds = 5
+                object : CountDownTimer((cooldownSeconds * 1000).toLong(), 1000) {
+                    override fun onTick(millisUntilFinished: Long) {
+                        val secondsRemaining = millisUntilFinished / 1000
+                        btnGenerateReference.text = "Đợi ${secondsRemaining}s"
+                    }
+
+                    override fun onFinish() {
+                        btnGenerateReference.text = originalText
+                        btnGenerateReference.isEnabled = true
+                    }
+                }.start()
+                Handler(Looper.getMainLooper()).postDelayed({
+                    btnGenerateReference.isEnabled = true
+                }, 5000)
+            }
             tvReference.text = text
             txtResult.text = ""
             viewModel.clearPronunciationFeedback()
@@ -109,7 +139,6 @@ class PronunciationActivity : AppCompatActivity() {
         viewModel.isLoading.observe(this) { isLoading ->
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
             btnStart.isEnabled = !isLoading
-            btnGenerateReference.isEnabled = !isLoading
             etTopicInput.isEnabled = !isLoading
         }
     }

@@ -1,4 +1,4 @@
-package com.example.lingobuddypck.Factory
+package com.example.lingobuddypck.Services
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

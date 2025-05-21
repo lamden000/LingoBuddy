@@ -1,4 +1,4 @@
-package com.example.lingobuddypck
+package com.example.lingobuddypck.ui
 
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -22,7 +22,8 @@ import com.example.lingobuddypck.data.ChatItemDecoration
 import android.Manifest
 import android.speech.tts.TextToSpeech
 import android.util.Log
-import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
+import com.example.lingobuddypck.R
+import com.example.lingobuddypck.Repository.FirebaseWordRepository
 import java.util.Locale
 
 

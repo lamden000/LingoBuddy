@@ -4,9 +4,9 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.lingobuddypck.Network.RetrofitClient
-import com.example.lingobuddypck.Network.TogetherAI.ChatRequest
-import com.example.lingobuddypck.Network.TogetherAI.ChatResponse
-import com.example.lingobuddypck.Network.TogetherAI.Message
+import com.example.lingobuddypck.Services.ChatRequest
+import com.example.lingobuddypck.Services.ChatResponse
+import com.example.lingobuddypck.Services.Message
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response

@@ -6,11 +6,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import com.example.lingobuddypck.LoginActivity
-import com.example.lingobuddypck.R
+import com.example.lingobuddypck.ui.LoginActivity
 import com.example.lingobuddypck.databinding.FragmentNotificationsBinding
 import com.google.firebase.auth.FirebaseAuth
 

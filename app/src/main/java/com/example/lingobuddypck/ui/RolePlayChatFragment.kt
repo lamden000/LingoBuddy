@@ -24,9 +24,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.lingobuddypck.Factory.RolePlayViewModelFactory
+import com.example.lingobuddypck.Services.RolePlayViewModelFactory
 import com.example.lingobuddypck.R
-import com.example.lingobuddypck.ViewModel.Repository.FirebaseWordRepository
+import com.example.lingobuddypck.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.ViewModel.RolePlayChatViewModel
 import com.example.lingobuddypck.adapter.ChatAdapter
 import com.example.lingobuddypck.data.ChatItemDecoration

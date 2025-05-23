@@ -4,6 +4,7 @@ package com.example.lingobuddypck.Services.QuizService.NormalQuiz
 import android.content.Context
 import android.graphics.Color
 import android.os.CountDownTimer
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
@@ -20,8 +21,11 @@ import com.example.lingobuddypck.Services.QuestionData
 import com.example.lingobuddypck.Services.UserAnswer
 import com.example.lingobuddypck.R
 import com.example.lingobuddypck.Repository.FirebaseWordRepository
-import com.example.lingobuddypck.ui.utils.TopicUtils
-import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
+import com.example.lingobuddypck.utils.TopicUtils
+import com.example.lingobuddypck.utils.enableSelectableSaveAction
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
 
 
 /**
@@ -333,13 +337,35 @@ class TestUIManager(
         countdownTimer?.cancel()
     }
 
-
-
     private fun saveProficiencyTestResult(score: Int) {
-        // TODO: lưu vào Firebase, Room hoặc chia sẻ ViewModel
-        Toast.makeText(context, "Điểm đánh giá: $score/100", Toast.LENGTH_LONG).show()
-    }
+        val firebaseUser = FirebaseAuth.getInstance().currentUser
+        val db = FirebaseFirestore.getInstance()
 
+        if (firebaseUser == null) {
+            Toast.makeText(context, "Lỗi: Người dùng chưa đăng nhập.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val userId = firebaseUser.uid
+
+        val testResult = hashMapOf(
+            "score" to score,
+            "timestamp" to FieldValue.serverTimestamp(),
+            "userId" to userId
+        )
+
+        db.collection("users").document(userId)
+            .collection("proficiencyTestResults")
+            .add(testResult)
+            .addOnSuccessListener { documentReference ->
+                Toast.makeText(context, "Điểm đánh giá đã được lưu: $score/100", Toast.LENGTH_LONG).show()
+                Log.d("TestUIManager", "Proficiency result saved with ID: ${documentReference.id}")
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(context, "Lỗi khi lưu điểm: ${e.message}", Toast.LENGTH_LONG).show()
+                Log.w("TestUIManager", "Error saving proficiency result", e)
+            }
+    }
     private fun resetUIForStart() {
         views.questionsContainer.removeAllViews()
         questionViews.clear()

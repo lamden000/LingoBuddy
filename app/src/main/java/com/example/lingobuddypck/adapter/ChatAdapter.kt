@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.lingobuddypck.Services.Message
 import com.example.lingobuddypck.R
 import com.example.lingobuddypck.Repository.FirebaseWordRepository
-import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
+import com.example.lingobuddypck.utils.enableSelectableSaveAction
 
 class ChatAdapter(private val messages: MutableList<Message>, private val context: Context,
                   private val firebaseWordRepository: FirebaseWordRepository

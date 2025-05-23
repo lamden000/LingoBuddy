@@ -1,4 +1,4 @@
-package com.example.lingobuddypck.ui.utils
+package com.example.lingobuddypck.utils
 
 import android.app.AlertDialog
 import android.content.Context

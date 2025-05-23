@@ -1,4 +1,4 @@
-package com.example.lingobuddypck.ui.utils
+package com.example.lingobuddypck.utils
 
 import android.content.Context
 import android.util.Log

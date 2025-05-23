@@ -27,7 +27,7 @@ import com.example.lingobuddypck.Network.RetrofitClient
 import com.example.lingobuddypck.R
 import com.example.lingobuddypck.Services.PronunciationFeedback
 import com.example.lingobuddypck.ViewModel.PronunciationViewModel
-import com.example.lingobuddypck.ui.utils.TopicUtils
+import com.example.lingobuddypck.utils.TopicUtils
 import com.google.android.material.textfield.TextInputEditText
 import com.google.gson.Gson
 class PronunciationActivity : AppCompatActivity() {

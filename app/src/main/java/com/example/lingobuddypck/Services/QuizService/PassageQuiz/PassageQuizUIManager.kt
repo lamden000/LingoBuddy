@@ -17,8 +17,8 @@ import com.example.lingobuddypck.Services.QuestionData
 import com.example.lingobuddypck.Services.UserAnswer
 import com.example.lingobuddypck.R
 import com.example.lingobuddypck.Repository.FirebaseWordRepository
-import com.example.lingobuddypck.ui.utils.TopicUtils
-import com.example.lingobuddypck.ui.utils.enableSelectableSaveAction
+import com.example.lingobuddypck.utils.TopicUtils
+import com.example.lingobuddypck.utils.enableSelectableSaveAction
 
 class PassageQuizUIManager(
     private val context: Context,

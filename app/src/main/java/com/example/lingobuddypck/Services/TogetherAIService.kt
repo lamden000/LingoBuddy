@@ -36,6 +36,14 @@ data class ChatResponse(
     val output: Output
 )
 
+data class Output(
+    val choices: List<Choice>
+)
+
+data class Choice(
+    val text: String
+)
+
 data class ChatImageResponse(
     val choices: List<ChoiceImage>
 )
@@ -58,13 +66,6 @@ data class MessageContent(
     val tool_calls: List<Any>
 )
 
-data class Output(
-    val choices: List<Choice>
-)
-
-data class Choice(
-    val text: String
-)
 
 //Test data
 data class AIQuestionResponse(

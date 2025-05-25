@@ -1,9 +1,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="8dp">
 
-  <!-- RecyclerView to display chat messages -->
+  <!-- RecyclerView for messages -->
   <androidx.recyclerview.widget.RecyclerView
       android:id="@+id/recyclerView"
       android:layout_width="match_parent"
@@ -11,34 +12,60 @@
       android:layout_weight="1"
       android:background="@drawable/chat_background" />
 
-  <!-- EditText for typing message -->
-  <EditText
-      android:id="@+id/inputMessage"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:hint="Nhâp tin nhắn..." />
-
-  <!-- Button to select an image -->
-  <Button
-      android:id="@+id/selectImageButton"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:text="Chọn ảnh" />
-
-  <!-- ImageView to preview the selected image -->
+  <!-- Image preview (if needed) -->
   <ImageView
       android:id="@+id/imagePreview"
       android:layout_width="match_parent"
       android:layout_height="200dp"
       android:visibility="gone"
-      android:layout_gravity="center"
+      android:layout_marginTop="8dp"
       android:scaleType="centerCrop" />
 
-  <!-- Button to send the message -->
-  <Button
-      android:id="@+id/sendButton"
+  <!-- Camera + Select Image Buttons -->
+  <LinearLayout
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:text="Gửi" />
+      android:orientation="horizontal"
+      android:gravity="center"
+      android:layout_marginTop="8dp">
+
+    <Button
+        android:id="@+id/openCameraButton"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:text="📷 Camera" />
+
+    <Button
+        android:id="@+id/selectImageButton"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:text="🖼 Chọn ảnh"
+        android:layout_marginStart="8dp" />
+  </LinearLayout>
+
+  <!-- Input + Send Button -->
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal"
+      android:gravity="center_vertical"
+      android:layout_marginTop="8dp">
+
+    <EditText
+        android:id="@+id/inputMessage"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:hint="Nhập tin nhắn..."
+        android:layout_marginEnd="8dp" />
+
+    <Button
+        android:id="@+id/sendButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Gửi" />
+  </LinearLayout>
 
 </LinearLayout>

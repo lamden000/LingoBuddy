@@ -117,7 +117,7 @@ class RolePlayChatFragment : Fragment() {
             // If the last message is from the bot and user used voice input
             val lastMessage = messages.lastOrNull()
             if (usedSpeechToText && lastMessage != null && lastMessage.role == "assistant" && lastMessage.content != null) {
-                detectLanguageAndSpeak(lastMessage.content)
+                handleTTSWithOptionalCorrections(lastMessage.content)
                 usedSpeechToText = false // Reset flag
             }
         }
@@ -160,8 +160,24 @@ class RolePlayChatFragment : Fragment() {
             }
     }
 
+    fun handleTTSWithOptionalCorrections(text: String) {
+        val parts = text.split("[CORRECTIONS]", ignoreCase = true)
+
+        val englishPart = parts.getOrNull(0)?.trim()
+        val vietnamesePart = parts.getOrNull(1)?.trim()
+
+        if (!englishPart.isNullOrBlank()) {
+            detectLanguageAndSpeak(englishPart)
+        }
+
+        if (!vietnamesePart.isNullOrBlank()) {
+            detectLanguageAndSpeak(vietnamesePart)
+        }
+    }
+
+
     private fun speakOut(text: String) {
-        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        textToSpeech.speak(text, TextToSpeech.QUEUE_ADD, null, null)
     }
 
     private fun sendMessage() {

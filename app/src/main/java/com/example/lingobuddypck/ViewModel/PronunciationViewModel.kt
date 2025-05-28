@@ -34,6 +34,7 @@ class PronunciationViewModel(
     init {
         _referenceText.value = "Hello, How are you today?"
         _statusMessage.value = "Sẵn sàng."
+        _isLoading.value=false
     }
 
     fun updateStatusMessage(message: String) {

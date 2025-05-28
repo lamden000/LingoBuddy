@@ -27,20 +27,17 @@ class ChatViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    private val systemMessageContentBase = "Bạn là một trợ lý ảo giúp người học cải thiện tiếng Anh, hãy dạy người dùng tiếng anh một cách thân thiện và hiệu quả. Tên của bạn là Lingo."
+    private val systemMessageContentBase = "Bạn là một trợ lý ảo giúp người học cải thiện tiếng Anh, hãy dạy người dùng tiếng anh một cách thân thiện và hiệu quả, nếu người dùng nói tiếng Anh hãy nói tếng Anh. Tên của bạn là Lingo."
     private var currentSystemMessageContent: String = systemMessageContentBase
 
     private val fullHistory = mutableListOf<Message>()
 
-    // Biến để lưu thông tin cá nhân khác (nếu có)
     private var fetchedUserPersonalDetails: UserProfileBundle? = null
-    // Biến để lưu phong cách AI được fetch từ Firebase
-    private var currentAiTone: String = "trung lập và thân thiện" // Giá trị mặc định
+    private var currentAiTone: String = "trung lập và thân thiện"
 
     private var initialSessionSetupDone = false
 
     init {
-        // Khi ViewModel được tạo, bắt đầu quá trình lấy dữ liệu cho session chat
         initializeChatSessionData()
     }
 
@@ -51,9 +48,9 @@ class ChatViewModel : ViewModel() {
         val userId = auth.currentUser?.uid
         if (userId == null) {
             Log.d("ChatViewModel", "Người dùng chưa đăng nhập. Sử dụng cài đặt mặc định cho chat.")
-            this.fetchedUserPersonalDetails = null // Reset nếu user logout rồi login lại
-            this.currentAiTone = "trung lập và thân thiện" // Reset về mặc định
-            rebuildSystemMessageAndFinalizeSetup() // Xây dựng system message và hoàn tất setup
+            this.fetchedUserPersonalDetails = null
+            this.currentAiTone = "trung lập và thân thiện"
+            rebuildSystemMessageAndFinalizeSetup()
             return
         }
 
@@ -76,21 +73,18 @@ class ChatViewModel : ViewModel() {
                 } else {
                     Log.d("ChatViewModel", "Không tìm thấy document người dùng. Sử dụng cài đặt mặc định.")
                     fetchedUserPersonalDetails = null
-                    currentAiTone = "trung lập và thân thiện" // Mặc định nếu không có dữ liệu
+                    currentAiTone = "trung lập và thân thiện"
                 }
-                rebuildSystemMessageAndFinalizeSetup() // Xây dựng system message và hoàn tất setup
+                rebuildSystemMessageAndFinalizeSetup()
             }
             .addOnFailureListener { exception ->
                 Log.w("ChatViewModel", "Lỗi khi fetch dữ liệu người dùng cho phiên chat", exception)
                 fetchedUserPersonalDetails = null
-                currentAiTone = "trung lập và thân thiện" // Mặc định khi có lỗi
+                currentAiTone = "trung lập và thân thiện"
                 rebuildSystemMessageAndFinalizeSetup()
             }
     }
 
-    /**
-     * Xây dựng lại nội dung system message hoàn chỉnh và hoàn tất các bước setup ban đầu.
-     */
     private fun rebuildSystemMessageAndFinalizeSetup() {
         rebuildSystemMessageInternal() // Gọi hàm nội bộ để xây dựng system message
         if (!initialSessionSetupDone) {
@@ -100,11 +94,6 @@ class ChatViewModel : ViewModel() {
         isLoading.value = false // Kết thúc trạng thái loading ban đầu
     }
 
-    /**
-     * Hàm nội bộ để xây dựng lại currentSystemMessageContent.
-     * Sử dụng thông tin cá nhân đã fetch (fetchedUserPersonalDetails)
-     * và phong cách AI hiện tại (currentAiTone).
-     */
     private fun rebuildSystemMessageInternal() {
         var newSystemContent = systemMessageContentBase
 
@@ -121,11 +110,9 @@ class ChatViewModel : ViewModel() {
             }
         }
 
-        // ⭐ SỬ DỤNG PHONG CÁCH AI ĐÃ FETCH ĐỂ THÊM VÀO SYSTEM MESSAGE ⭐
         if (currentAiTone.isNotBlank()) {
             newSystemContent += "\n\nHãy cố gắng trò chuyện với phong cách sau: $currentAiTone."
         } else {
-            // Nếu currentAiTone trống (ví dụ người dùng xóa trắng và lưu), có thể dùng một phong cách mặc định khác ở đây
             newSystemContent += "\n\nHãy cố gắng trò chuyện với phong cách: trung lập và thân thiện."
         }
 
@@ -140,21 +127,19 @@ class ChatViewModel : ViewModel() {
         _chatMessages.value = fullHistory.toList()
     }
 
-    // Hàm sendMessage và getHistoryForAI không thay đổi,
-    // vì getHistoryForAI đã sử dụng `currentSystemMessageContent` được cập nhật.
     fun sendMessage(userInput: String) {
         if (userInput.isBlank()) return
 
         val userMessage = Message("user", userInput)
         fullHistory.add(userMessage)
         _chatMessages.value = fullHistory.toList()
-        isLoading.value = true // Loading cho phản hồi của AI
+        isLoading.value = true
 
         val historyForAI = getHistoryForAI()
         Log.d("ChatViewModel", "Gửi tới AI với system message: ${historyForAI.firstOrNull { it.role == "system" }?.content}")
 
         val request = ChatRequest(
-            model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", // Hoặc model của bạn
+            model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
             messages = historyForAI
         )
 

@@ -77,17 +77,23 @@ class RolePlayChatViewModel(
         return listOf(systemMessage) + recent.filter { it != systemMessage }
     }
 
-    private fun buildSystemPrompt(aiRole: String,userRole:String, context: String): String {
-        return "You are playing the role of \"$aiRole\" in the context of \"$context\". The user is acting as \"$userRole\".\n" +
-                "\n" +
-                "Respond naturally, in fluent English, as if you are a real person playing \"$aiRole\".\n" +
-                "\n" +
-                "Encourage the user to continue by adding relevant questions or context.\n" +
-                "\n" +
-                "If the user's English has any errors, provide corrections at the end.\n" +
-                "\n" +
-                "Format your response as:\n" +
-                "1. English reply (in character)\n" +
-                "2. Corrections (in Vietnamese, if any)"
+    private fun buildSystemPrompt(aiRole: String, userRole: String, context: String): String {
+        return """
+        You are playing the role of "$aiRole" in the context of "$context".
+        The user is acting as "$userRole".
+
+        Respond naturally, in fluent English, as if you are a real person playing "$aiRole".
+
+        Encourage the user to continue by asking relevant questions or adding context.
+
+        If the user's English has any errors (vocabulary, grammar, or intonation), include a [CORRECTIONS] section at the end of your message, written in Vietnamese.
+
+        Your response format should be:
+        <English message here>
+
+        [CORRECTIONS]
+        <Corrections in Vietnamese, only if needed>
+    """.trimIndent()
     }
+
 }

@@ -136,6 +136,7 @@ class ChatWithAIActivity : AppCompatActivity() {
                 speakOut(text) // fallback
             }
     }
+    
 
     private fun speakOut(text: String) {
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)

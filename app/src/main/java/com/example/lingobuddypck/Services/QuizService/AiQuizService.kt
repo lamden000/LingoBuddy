@@ -6,6 +6,7 @@ import com.example.lingobuddypck.Services.ChatRequest
 import com.example.lingobuddypck.Services.Message
 import com.example.lingobuddypck.Services.PassageQuizData
 import com.example.lingobuddypck.Services.QuestionData
+import com.example.lingobuddypck.Services.ReadingComprehensionQuizData
 import com.example.lingobuddypck.Services.TogetherApi
 import com.example.lingobuddypck.Services.UserAnswer
 import com.google.gson.Gson
@@ -125,7 +126,7 @@ class AiQuizService(
         val prompt = """
         Please generate one English language learning passage (around 150–200 words) on the topic "$topic".
 
-        The passage should have **at least 5 blanks**, each blank representing a missing word or phrase.
+        The passage should have **at least 5 blanks or more**, each blank representing a missing word or phrase.
         The missing parts should be **diverse**, including grammar points, vocabulary, and idiomatic expressions.
         Each blank in the passage should be clearly marked with a numbered placeholder like (1), (2), (3), etc.
 
@@ -195,6 +196,94 @@ class AiQuizService(
         }
     }
 
+    suspend fun generateReadingComprehensionQuiz(topic: String, isCustom: Boolean): ReadingComprehensionQuizData {
+        val prompt = """
+    Please generate one English language learning passage (around 150–200 words) on the topic "$topic".
+
+    Following the passage, create **at least 5 multiple-choice reading comprehension questions** based **only** on the information presented in the passage.
+    Each question should test understanding of the passage content.
+
+    For each question, provide:
+    - An "id" starting with "q" followed by the question number (e.g., "q1", "q2").
+    - The "question_text" (the actual question).
+    - Four multiple-choice options labeled a, b, c, d.
+    - The "correct_answer" key (a, b, c, or d).
+
+    Make sure:
+    - All options are plausible and grammatically valid.
+    - Only one option is contextually correct based **strictly on the provided passage**.
+    - The correct answers are **accurate and randomized among a/b/c/d**.
+    - Questions should cover different aspects of the passage (e.g., main idea, specific details, inference if explicitly supported by the text).
+
+    Return the result in **pure JSON format only**, structured as below:
+    ```json
+    {
+      "passage": "Full passage text here. For example: 'The sun is a star. It is very big and hot. Many planets orbit the sun, including Earth.'",
+      "questions": [
+        {
+          "id": "q1",
+          "question_text": "What is the sun described as in the passage?",
+          "options": {
+            "a": "A planet",
+            "b": "A star",
+            "c": "A moon",
+            "d": "A comet"
+          },
+          "correct_answer": "b"
+        },
+        {
+          "id": "q2",
+          "question_text": "According to the passage, which of these orbits the sun?",
+          "options": {
+            "a": "Other stars",
+            "b": "The moon",
+            "c": "Earth",
+            "d": "Asteroids"
+          },
+          "correct_answer": "c"
+        }
+        // at least 5 items
+      ]
+    }
+    ```
+    """.trimIndent()
+
+        // Giả sử systemMessageForTestGeneration đã được định nghĩa, ví dụ:
+        // val systemMessageForTestGeneration = Message("system", "You are an AI assistant that generates educational content.")
+        val messages = listOf(systemMessageForTestGeneration, Message("user", prompt))
+        val model = if (isCustom) "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free" else "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        // Giả định ChatRequest của bạn có cấu trúc (model, messages)
+        val request = ChatRequest(model, messages = messages)
+
+        // Giả định retrofitClient.chatWithAI trả về Response<ChatResponse> từ Retrofit
+        // và ChatResponse có cấu trúc như đã mô tả ở trên.
+        val response = retrofitClient.chatWithAI(request).awaitResponse()
+
+        if (!response.isSuccessful) {
+            throw Exception("API call failed with code ${response.code()} and message: ${response.errorBody()?.string()}")
+        }
+
+        val responseBody = response.body()
+        val responseJson = responseBody?.output?.choices?.getOrNull(0)?.text
+
+        if (!responseJson.isNullOrBlank()) {
+            val actualJson = extractJson(responseJson) // Sử dụng hàm extractJson của bạn
+            try {
+                val aiResponse = gson.fromJson(actualJson, ReadingComprehensionQuizData::class.java)
+                if (aiResponse.questions.size >= 5) {
+                    return aiResponse
+                } else {
+                    throw Exception("AI không trả về đủ số câu hỏi cần thiết trong bài đọc hiểu (${aiResponse.questions.size} câu hỏi). JSON nhận được: $actualJson")
+                }
+            } catch (jsonException: com.google.gson.JsonSyntaxException) {
+                throw Exception("Lỗi xử lý JSON trong bài đọc hiểu: ${jsonException.message}. JSON nhận được: $actualJson", jsonException)
+            } catch (e: Exception) {
+                throw Exception("Lỗi không xác định khi xử lý phản hồi bài đọc hiểu: ${e.message}. JSON nhận được (nếu có): $actualJson", e)
+            }
+        } else {
+            throw Exception("Không nhận được phản hồi hoặc phản hồi rỗng khi tạo bài đọc hiểu.")
+        }
+    }
 
     suspend fun gradeQuiz(questions: List<QuestionData>, userAnswers: List<UserAnswer>): AIGradingResult {
         if (questions.isEmpty()) {
@@ -270,12 +359,12 @@ class AiQuizService(
 
         val responseBody = response.body()
         val responseJson = responseBody?.output?.choices?.getOrNull(0)?.text
+        Log.d("GradingResult",responseJson.toString())
 
         if (!responseJson.isNullOrBlank()) {
             val actualJson = extractJson(responseJson)
             try {
                 val result = gson.fromJson(actualJson, AIGradingResult::class.java)
-                // You might add checks here, e.g., if result is null or score/total seems off
                 return result
             } catch (jsonException: Exception) {
                 throw Exception("Lỗi xử lý kết quả chấm điểm JSON từ AI: ${jsonException.message}", jsonException)

@@ -1,6 +1,10 @@
 package com.example.lingobuddypck.adapter
 
 import android.content.Context
+import android.graphics.Typeface
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.StyleSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -71,11 +75,44 @@ class ChatAdapter(private val messages: MutableList<Message>, private val contex
         }
     }
 
-    private fun removeLanguageTags(text: String?): String? {
-        if(text!=null)
-            return text.replace("</?en>".toRegex(), "").trim()
-        else
-            return null
+    fun formatTextWithHighlightedEnglish(input: String?): SpannableStringBuilder? {
+        if (input == null) return null
+
+        val spannable = SpannableStringBuilder()
+        var currentIndex = 0
+        val regex = Regex("<en>(.*?)</en>")
+
+        regex.findAll(input).forEach { matchResult ->
+            val start = matchResult.range.first
+            val end = matchResult.range.last + 1
+            val before = input.substring(currentIndex, start)
+            val englishText = matchResult.groupValues[1]
+
+            // Thêm phần trước đoạn <en>
+            spannable.append(before)
+
+            // Ghi nhớ vị trí bắt đầu đoạn tiếng Anh
+            val spanStart = spannable.length
+            spannable.append(englishText)
+            val spanEnd = spannable.length
+
+            // Tô đậm hoặc đổi màu đoạn tiếng Anh
+            spannable.setSpan(
+                StyleSpan(Typeface.BOLD), // hoặc ForegroundColorSpan(Color.BLUE)
+                spanStart,
+                spanEnd,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+
+            currentIndex = end
+        }
+
+        // Thêm phần còn lại sau thẻ cuối
+        if (currentIndex < input.length) {
+            spannable.append(input.substring(currentIndex))
+        }
+
+        return spannable
     }
 
     inner class AIMessageViewHolder(
@@ -90,7 +127,7 @@ class ChatAdapter(private val messages: MutableList<Message>, private val contex
 
         fun bind(message: Message) {
             val rawText = message.content
-            val displayText = removeLanguageTags(rawText)
+            val displayText = formatTextWithHighlightedEnglish(rawText)
 
             textMessage.text = displayText
             speakBtn.setOnClickListener {

@@ -32,7 +32,7 @@ class RolePlayChatViewModel(
     private val fullHistory = mutableListOf(systemMessage)
 
     init {
-        val welcome = Message("system", "Chúng ta sẽ bắt đầu vai trò: tôi: $aiRole - $context - bạn: $userRole. Bạn sẵn sàng chưa?")
+        val welcome = Message("system", "Chúng ta sẽ bắt đầu vai trò: Tôi: $aiRole - Bạn: $userRole - Bối cảnh: $context. Bạn sẵn sàng chưa?")
         fullHistory.add(welcome)
         _chatMessages.value = fullHistory.filter { it != systemMessage }
     }

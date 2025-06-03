@@ -58,8 +58,5 @@ class PassageQuizActivity : AppCompatActivity() {
             onHideNavigationBar = { /* Implement navigation bar hide logic here if needed */ }
         )
 
-        // Observe LiveData from the ViewModel to update the Activity's UI
-        // (Though UIManager handles most, sometimes activities have specific needs)
-        // For example, if you want to update the toolbar title based on loading state or quiz completion.
     }
 }

@@ -23,6 +23,7 @@ class ChatViewModel : ViewModel() {
     private val _chatMessages = MutableLiveData<List<Message>>()
     val chatMessages: LiveData<List<Message>> = _chatMessages
     val isLoading = MutableLiveData<Boolean>(false)
+    val isWaitingForResponse = MutableLiveData<Boolean>(false)
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
@@ -51,6 +52,7 @@ class ChatViewModel : ViewModel() {
     private fun initializeChatSessionData() {
         if (initialSessionSetupDone) return
         isLoading.value = true
+        isWaitingForResponse.value=false
 
         val userId = auth.currentUser?.uid
         if (userId == null) {
@@ -61,7 +63,6 @@ class ChatViewModel : ViewModel() {
             return
         }
 
-        // Fetch document người dùng từ Firestore
         db.collection("users").document(userId).get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
@@ -140,7 +141,7 @@ class ChatViewModel : ViewModel() {
         val userMessage = Message("user", userInput)
         fullHistory.add(userMessage)
         _chatMessages.value = fullHistory.toList()
-        isLoading.value = true
+        isWaitingForResponse.value=true
 
         val historyForAI = getHistoryForAI()
         Log.d("ChatViewModel", "Gửi tới AI với system message: ${historyForAI.firstOrNull { it.role == "system" }?.content}")
@@ -159,6 +160,7 @@ class ChatViewModel : ViewModel() {
                     Log.d("DEBUG_CL",aiResponseText)
                     fullHistory.add(assistantMessage)
                     _chatMessages.postValue(fullHistory.toList())
+                    isWaitingForResponse.value=false
                 } else {
                     Log.e("ChatViewModel", "AI response không thành công hoặc trống. Code: ${response.code()}")
                     val errorMessage = Message("assistant", "Xin lỗi, tôi đang gặp chút vấn đề. Bạn thử lại sau nhé.")

@@ -49,13 +49,13 @@ class RolePlayChatFragment : Fragment(), TextToSpeech.OnInitListener {
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var speechRecognitionIntent: Intent
     private var usedSpeechToText = false
+    private var currentActualMessages: List<Message> = listOf()
 
     // Biến cho TTS đa ngôn ngữ
     private var isTtsInitialized: Boolean = false
     private var vietnameseVoice: Voice? = null
     private var englishVoice: Voice? = null
 
-    // Data class cho các đoạn văn bản đã phân tích
     data class TextSegment(val text: String, val langCode: String)
 
     private val requestAudioPermissionLauncher =
@@ -118,17 +118,18 @@ class RolePlayChatFragment : Fragment(), TextToSpeech.OnInitListener {
         recyclerView.addItemDecoration(ChatItemDecoration(50))
 
         // Khởi tạo TextToSpeech
-        textToSpeech = TextToSpeech(requireContext(), this) // `this` implement OnInitListener
+        textToSpeech = TextToSpeech(requireContext(), this)
 
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
         speechRecognitionIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US.toString()) // Hoặc Locale.ENGLISH.toString()
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US.toString())
         }
         usedSpeechToText = false
 
         viewModel.chatMessages.observe(viewLifecycleOwner, Observer { messages ->
 
+            currentActualMessages = messages
             val lastMessageOriginal = messages.lastOrNull()
             if (usedSpeechToText && lastMessageOriginal != null && lastMessageOriginal.role == "assistant" && lastMessageOriginal.content != null) {
                 speakMultiLanguageText(lastMessageOriginal.content)
@@ -140,12 +141,17 @@ class RolePlayChatFragment : Fragment(), TextToSpeech.OnInitListener {
             if (messages.isNotEmpty()) {
                 recyclerView.scrollToPosition(messages.size - 1)
             }
+            updateAdapterWithTypingIndicator(viewModel.isWaitingForResponse.value ?: false)
         })
 
         viewModel.isLoading.observe(viewLifecycleOwner, Observer { isLoading ->
-            loadingSpinner.visibility = if (isLoading == true) View.VISIBLE else View.GONE // Rõ ràng hơn
+            loadingSpinner.visibility = if (isLoading == true) View.VISIBLE else View.GONE
             sendButton.isEnabled = !(isLoading ?: false)
             micButton.isEnabled = !(isLoading ?: false)
+        })
+
+        viewModel.isWaitingForResponse.observe(requireActivity(), Observer { isWaitingForResponse ->
+            updateAdapterWithTypingIndicator(isWaitingForResponse)
         })
 
         sendButton.setOnClickListener {
@@ -157,13 +163,27 @@ class RolePlayChatFragment : Fragment(), TextToSpeech.OnInitListener {
         }
     }
 
+    private fun updateAdapterWithTypingIndicator(isAiTyping: Boolean) {
+        val displayList = ArrayList(currentActualMessages.filter { it.role != "typing_indicator" })
+
+        if (isAiTyping) {
+
+            displayList.add(Message("typing_indicator", null))
+        }
+
+        adapter.setMessages(displayList) // Cập nhật adapter với danh sách mới
+
+        if (displayList.isNotEmpty()) {
+            recyclerView.scrollToPosition(displayList.size - 1)
+        }
+    }
+
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             isTtsInitialized = true
             Log.d("TTS", "TextToSpeech initialized successfully.")
             try {
                 val voices = textToSpeech.voices
-                // Logic tìm giọng nữ (ưu tiên offline)
                 for (voice in voices) {
                     val lang = voice.locale.language
                     val name = voice.name.toLowerCase(Locale.ROOT)

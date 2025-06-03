@@ -46,7 +46,7 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var usedSpeechToText = false
 
     private var isTtsInitialized: Boolean = false
-
+    private var currentActualMessages: List<Message> = listOf()
 
     data class TextSegment(val text: String, val langCode: String)
 
@@ -70,6 +70,7 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         textToSpeech = TextToSpeech(this, this)
 
         viewModel.chatMessages.observe(this, Observer { messages ->
+            currentActualMessages = messages
             val lastMessageOriginal = messages.lastOrNull()
             if (usedSpeechToText && lastMessageOriginal != null && lastMessageOriginal.role == "assistant" && lastMessageOriginal.content != null) {
                 speakMultiLanguageText(lastMessageOriginal.content)
@@ -81,6 +82,7 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             if (messages.isNotEmpty()) {
                 recyclerView.scrollToPosition(messages.size - 1)
             }
+            updateAdapterWithTypingIndicator(viewModel.isWaitingForResponse.value ?: false)
         })
 
         viewModel.isLoading.observe(this, Observer { isLoading ->
@@ -89,7 +91,10 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             micButton.isEnabled = !isLoading
         })
 
-        // ... (phần còn lại của onCreate, sendButton, speech recognizer giữ nguyên) ...
+        viewModel.isWaitingForResponse.observe(this, Observer { isWaitingForResponse ->
+            updateAdapterWithTypingIndicator(isWaitingForResponse)
+        })
+
         sendButton.setOnClickListener { sendMessage() }
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognitionIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -113,6 +118,20 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 }
             }
         micButton.setOnClickListener { checkAudioPermissionAndStartRecognition() }
+    }
+
+    private fun updateAdapterWithTypingIndicator(isAiTyping: Boolean) {
+        val displayList = ArrayList(currentActualMessages.filter { it.role != "typing_indicator" })
+
+        if (isAiTyping) {
+            displayList.add(Message("typing_indicator", null))
+        }
+
+        adapter.setMessages(displayList) // Cập nhật adapter với danh sách mới
+
+        if (displayList.isNotEmpty()) {
+            recyclerView.scrollToPosition(displayList.size - 1)
+        }
     }
 
     override fun onInit(status: Int) {

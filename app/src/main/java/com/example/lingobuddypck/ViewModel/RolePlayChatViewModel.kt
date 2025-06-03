@@ -21,7 +21,7 @@ class RolePlayChatViewModel(
 
     private val _chatMessages = MutableLiveData<List<Message>>()
     val chatMessages: LiveData<List<Message>> = _chatMessages
-
+    val isWaitingForResponse = MutableLiveData<Boolean>(false)
     val isLoading = MutableLiveData<Boolean>()
 
     private val systemMessage = Message(
@@ -35,14 +35,14 @@ class RolePlayChatViewModel(
         val welcome = Message("system", "Chúng ta sẽ bắt đầu vai trò: Tôi: $aiRole - Bạn: $userRole - Bối cảnh: $context. Bạn sẵn sàng chưa?")
         fullHistory.add(welcome)
         _chatMessages.value = fullHistory.filter { it != systemMessage }
+        isWaitingForResponse.value=false
     }
 
     fun sendMessage(userInput: String) {
         val userMessage = Message("user", userInput)
         fullHistory.add(userMessage)
         _chatMessages.value = fullHistory.filter { it != systemMessage }
-
-        isLoading.postValue(true)
+        isWaitingForResponse.value=true
 
         val recentHistory = getRecentHistory()
         val request = ChatRequest(
@@ -57,13 +57,13 @@ class RolePlayChatViewModel(
                 if (!aiResponse.isNullOrEmpty()) {
                     val assistantMessage = Message("assistant", aiResponse)
                     fullHistory.add(assistantMessage)
+                    isWaitingForResponse.value=false
                     _chatMessages.postValue(fullHistory.filter { it != systemMessage })
                 }
             }
 
             override fun onFailure(call: Call<ChatResponse>, t: Throwable) {
-                isLoading.postValue(false)
-                // Optional: handle error
+
             }
         })
     }

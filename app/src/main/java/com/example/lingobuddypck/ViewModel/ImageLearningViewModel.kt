@@ -33,10 +33,11 @@ class ImageLearningViewModel : ViewModel() {
 
     private val chatHistory = mutableListOf<Message>()
     private val MAX_CHAT_HISTORY = 5
+    val isWaitingForResponse = MutableLiveData<Boolean>(false)
 
     fun sendImageAndMessage(context: Context, message: String, imageUri: Uri?) {
         _loading.value = true
-
+        isWaitingForResponse.value=true
         viewModelScope.launch { // This is your coroutine scope
             try {
                 val contentList = mutableListOf<Map<String, Any>>()
@@ -82,6 +83,7 @@ class ImageLearningViewModel : ViewModel() {
                 RetrofitClient.instance.chatWithImageAI(request).enqueue(object : Callback<ChatImageResponse> {
                     override fun onResponse(call: Call<ChatImageResponse>, response: Response<ChatImageResponse>) {
                         _loading.value = false
+                        isWaitingForResponse.value=false
                         if (response.isSuccessful) {
                             val responseContent = response.body()?.choices?.get(0)?.message?.content ?: "No response from AI."
 
@@ -123,12 +125,14 @@ class ImageLearningViewModel : ViewModel() {
 
                     override fun onFailure(call: Call<ChatImageResponse>, t: Throwable) {
                         _loading.value = false
+                        isWaitingForResponse.value=false
                         _chatMessages.value = listOf(Message("AI", "Error: ${t.message}"))
                         Log.e("API_ERROR", "API call failed", t)
                     }
                 })
             } catch (e: Exception) {
                 _loading.value = false
+                isWaitingForResponse.value=false
                 _chatMessages.value = listOf(Message("Error encoding image: ${e.message}", "AI"))
                 Log.e("IMAGE_ENCODING", "Image encoding failed", e)
             }

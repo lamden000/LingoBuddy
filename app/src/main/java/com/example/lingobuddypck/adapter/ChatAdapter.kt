@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -14,7 +15,8 @@ import com.example.lingobuddypck.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.utils.enableSelectableSaveAction
 
 class ChatAdapter(private val messages: MutableList<Message>, private val context: Context,
-                  private val firebaseWordRepository: FirebaseWordRepository
+                  private val firebaseWordRepository: FirebaseWordRepository,
+                  private val onSpeakClick: (String?) -> Unit
 ) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -34,7 +36,7 @@ class ChatAdapter(private val messages: MutableList<Message>, private val contex
             UserMessageViewHolder(view)
         } else {
             val view = inflater.inflate(R.layout.item_message_other, parent, false)
-            AIMessageViewHolder(view,context,firebaseWordRepository)
+            AIMessageViewHolder(view, context, firebaseWordRepository, onSpeakClick) // 👈 Truyền callback vào đây
         }
     }
 
@@ -69,18 +71,31 @@ class ChatAdapter(private val messages: MutableList<Message>, private val contex
         }
     }
 
+    private fun removeLanguageTags(text: String?): String? {
+        if(text!=null)
+            return text.replace("</?en>".toRegex(), "").trim()
+        else
+            return null
+    }
+
     inner class AIMessageViewHolder(
         itemView: View,
         private val context: Context,
-        private val firebaseWordRepository: FirebaseWordRepository
+        private val firebaseWordRepository: FirebaseWordRepository,
+        private val onSpeakClick: (String?) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
 
         private val textMessage: TextView = itemView.findViewById(R.id.textMessage)
-        private val avatarImage: ImageView = itemView.findViewById(R.id.avatarAI)
+        private val speakBtn: ImageButton = itemView.findViewById(R.id.speakButton)
 
         fun bind(message: Message) {
-            textMessage.text = message.content
-            avatarImage.setImageResource(R.drawable.avatar_ai)
+            val rawText = message.content
+            val displayText = removeLanguageTags(rawText)
+
+            textMessage.text = displayText
+            speakBtn.setOnClickListener {
+                onSpeakClick(message.content)
+            }
 
             textMessage.enableSelectableSaveAction(context) { selectedText, note ->
                 firebaseWordRepository.saveWord(

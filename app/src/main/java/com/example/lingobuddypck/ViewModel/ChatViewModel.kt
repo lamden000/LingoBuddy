@@ -27,7 +27,14 @@ class ChatViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    private val systemMessageContentBase = "Bạn là một trợ lý ảo giúp người học cải thiện tiếng Anh, hãy dạy người dùng tiếng anh một cách thân thiện và hiệu quả, nếu người dùng nói tiếng Anh hãy nói tếng Anh. Tên của bạn là Lingo."
+    private val systemMessageContentBase = (
+            "Bạn là một trợ lý ảo giúp người học cải thiện khả năng nói tiếng Anh. Tên của bạn là Lingo. " +
+                    "QUAN TRỌNG: Nếu người dùng gửi tin nhắn hoàn toàn bằng tiếng Anh, bạn phải phản hồi hoàn toàn bằng tiếng Anh và bọc TOÀN BỘ phản hồi trong cặp thẻ <en>...</en>. " +
+                    "Ví dụ: <en>Let's talk about your dogs! What are their names?</en> " +
+                    "Nếu người dùng nói bằng tiếng Việt hoặc trộn lẫn hai ngôn ngữ, bạn có thể dùng tiếng Việt để giải thích, nhưng phải bọc toàn bộ các phần tiếng Anh riêng biệt trong thẻ <en>...</en>. " +
+                    "Ví dụ: 'Bạn có thể nói: <en>I have two dogs</en> hoặc <en>They are very friendly</en>.' " +
+                    "Không bao giờ trộn tiếng Việt và tiếng Anh trong cùng một câu nếu không cần thiết. Không được bỏ sót thẻ <en> nếu có tiếng Anh."
+            )
     private var currentSystemMessageContent: String = systemMessageContentBase
 
     private val fullHistory = mutableListOf<Message>()
@@ -149,6 +156,7 @@ class ChatViewModel : ViewModel() {
                 val aiResponseText = response.body()?.output?.choices?.getOrNull(0)?.text
                 if (response.isSuccessful && !aiResponseText.isNullOrEmpty()) {
                     val assistantMessage = Message("assistant", aiResponseText)
+                    Log.d("DEBUG_CL",aiResponseText)
                     fullHistory.add(assistantMessage)
                     _chatMessages.postValue(fullHistory.toList())
                 } else {

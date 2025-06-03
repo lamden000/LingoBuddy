@@ -8,6 +8,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.speech.tts.TextToSpeech
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -30,7 +32,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class ImageLearningActivity : AppCompatActivity() {
+class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var inputMessage: EditText
@@ -40,6 +42,7 @@ class ImageLearningActivity : AppCompatActivity() {
     private lateinit var imagePreview: ImageView
     private lateinit var viewModel: ImageLearningViewModel
     private lateinit var chatAdapter: ChatAdapter
+    private lateinit var textToSpeech: TextToSpeech
 
     private var selectedImageUri: Uri? = null
     private var tempImageUri: Uri? = null // To store URI for the image to be captured by camera
@@ -90,9 +93,12 @@ class ImageLearningActivity : AppCompatActivity() {
         selectImageButton = findViewById(R.id.selectImageButton)
         openCameraButton = findViewById(R.id.openCameraButton) // 🚨 Initialize your new button
         imagePreview = findViewById(R.id.imagePreview)
+        textToSpeech = TextToSpeech(this, this)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
-        chatAdapter = ChatAdapter(mutableListOf(), this, FirebaseWordRepository())
+        chatAdapter = ChatAdapter(mutableListOf(), this, FirebaseWordRepository(),
+            onSpeakClick = { text ->
+                detectAndSpeak(text)})
         recyclerView.adapter = chatAdapter
 
         selectImageButton.setOnClickListener {
@@ -190,5 +196,52 @@ class ImageLearningActivity : AppCompatActivity() {
             Toast.makeText(this, "Error creating image file: ${ex.message}", Toast.LENGTH_LONG).show()
             tempImageUri = null // Reset if URI creation failed
         }
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            Log.d("TTS", "TextToSpeech initialized successfully.")
+            try {
+                val availableLanguages = textToSpeech.availableLanguages
+                Log.i("TTS", "Available languages: $availableLanguages")
+            } catch (e: Exception) {
+                Log.e("TTS", "Error listing languages: ${e.message}", e)
+            }
+        } else {
+            Log.e("TTS", "TTS Initialization Failed! Status: $status")
+            Toast.makeText(this, "Không thể khởi tạo TextToSpeech.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun detectAndSpeak(text: String?) {
+        val languageIdentifier = com.google.mlkit.nl.languageid.LanguageIdentification.getClient()
+
+        if (text != null) {
+            languageIdentifier.identifyLanguage(text)
+                .addOnSuccessListener { languageCode ->
+                    if (languageCode != "und") {
+                        val locale = Locale(languageCode)
+                        if (textToSpeech.isLanguageAvailable(locale) >= TextToSpeech.LANG_AVAILABLE) {
+                            textToSpeech.language = locale
+                            textToSpeech.speak(text, TextToSpeech.QUEUE_ADD, null, null)
+                        } else {
+                            Log.w("TTS", "Ngôn ngữ $languageCode không được hỗ trợ bởi TTS.")
+                            fallbackSpeak(text, textToSpeech)
+                        }
+                    } else {
+                        Log.w("TTS", "Không xác định được ngôn ngữ.")
+                        fallbackSpeak(text, textToSpeech)
+                    }
+                }
+                .addOnFailureListener {
+                    Log.e("TTS", "Lỗi khi xác định ngôn ngữ", it)
+                    fallbackSpeak(text, textToSpeech)
+                }
+        }
+    }
+
+    private fun fallbackSpeak(text: String, textToSpeech: TextToSpeech) {
+        textToSpeech.language = Locale("vi", "VN") // hoặc Locale.ENGLISH nếu bạn muốn mặc định là tiếng Anh
+        textToSpeech.speak(text, TextToSpeech.QUEUE_ADD, null, null)
     }
 }

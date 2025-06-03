@@ -85,6 +85,10 @@ class RolePlayChatViewModel(
         Respond naturally, in fluent English, as if you are a real person playing "$aiRole".
 
         Encourage the user to continue by asking relevant questions or adding context.
+        IMPORTANT REMINDER FOR THIS ROLE-PLAY:
+        As per general instructions, ALL English text you provide in your response MUST be wrapped with <en> and </en> tags.
+        This includes your main conversational parts and any examples or phrases you use.
+        For instance: 'I think <en>that's a wonderful idea</en>.' or 'You could also say <en>it's a pleasure to meet you</en>.'
 
         If the user's English has any errors (vocabulary, grammar, or intonation), include a [CORRECTIONS] section at the end of your message, written in Vietnamese.
 
@@ -92,7 +96,7 @@ class RolePlayChatViewModel(
         <English message here>
 
         [CORRECTIONS]
-        <Corrections in Vietnamese, only if needed>
+        <Corrections in Vietnamese and English correct version, only if needed>
     """.trimIndent()
     }
 

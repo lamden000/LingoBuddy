@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.Voice
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -21,18 +22,21 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.lingobuddypck.Services.RolePlayViewModelFactory
 import com.example.lingobuddypck.R
 import com.example.lingobuddypck.Repository.FirebaseWordRepository
+import com.example.lingobuddypck.Services.Message
 import com.example.lingobuddypck.ViewModel.RolePlayChatViewModel
 import com.example.lingobuddypck.adapter.ChatAdapter
 import com.example.lingobuddypck.data.ChatItemDecoration
 import java.util.Locale
 
-class RolePlayChatFragment : Fragment() {
+
+class RolePlayChatFragment : Fragment(), TextToSpeech.OnInitListener {
 
     private lateinit var viewModel: RolePlayChatViewModel
     private lateinit var adapter: ChatAdapter
@@ -45,7 +49,27 @@ class RolePlayChatFragment : Fragment() {
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var speechRecognitionIntent: Intent
     private var usedSpeechToText = false
-    private val RECORD_AUDIO_PERMISSION_CODE = 1001
+
+    // Biến cho TTS đa ngôn ngữ
+    private var isTtsInitialized: Boolean = false
+    private var vietnameseVoice: Voice? = null
+    private var englishVoice: Voice? = null
+
+    // Data class cho các đoạn văn bản đã phân tích
+    data class TextSegment(val text: String, val langCode: String)
+
+    private val requestAudioPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                startSpeechRecognition()
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    "Cần cấp quyền thu âm để sử dụng tính năng này",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
 
     private val speechActivityResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -66,70 +90,64 @@ class RolePlayChatFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View {
+    ): View? {
         return inflater.inflate(R.layout.activity_chat_with_ai, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val aiRole = arguments?.getString("AIRole") ?: "Giáo viên"
-        val userRole = arguments?.getString("UserRole") ?: "Giáo viên"
-        val contextText = arguments?.getString("context") ?: "Lớp học tiếng Anh"
+        val aiRole = arguments?.getString("AIRole") ?: "Teacher"
+        val userRole = arguments?.getString("UserRole") ?: "Student"
+        val contextText = arguments?.getString("context") ?: "English conversation practice"
 
         val factory = RolePlayViewModelFactory(userRole, aiRole, contextText)
         viewModel = ViewModelProvider(this, factory)[RolePlayChatViewModel::class.java]
 
-        // Initialize views
         inputMessage = view.findViewById(R.id.inputMessage)
         sendButton = view.findViewById(R.id.sendButton)
         loadingSpinner = view.findViewById(R.id.loadingSpinner)
         recyclerView = view.findViewById(R.id.chatRecyclerView)
         micButton = view.findViewById(R.id.micButton)
 
-        // Setup RecyclerView
-        adapter = ChatAdapter(mutableListOf(), requireContext(), FirebaseWordRepository())
+        adapter = ChatAdapter(mutableListOf(),requireContext(), FirebaseWordRepository(), onSpeakClick = { text ->
+            speakMultiLanguageText(text)
+        })
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
         recyclerView.addItemDecoration(ChatItemDecoration(50))
 
-        // Initialize TextToSpeech
-        textToSpeech = TextToSpeech(requireContext()) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                textToSpeech.language = Locale.US
-            }
-        }
+        // Khởi tạo TextToSpeech
+        textToSpeech = TextToSpeech(requireContext(), this) // `this` implement OnInitListener
 
-        // Initialize SpeechRecognizer and Intent
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
         speechRecognitionIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US") // You can change the language
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US.toString()) // Hoặc Locale.ENGLISH.toString()
         }
+        usedSpeechToText = false
 
-        usedSpeechToText = false // Reset in onViewCreated
+        viewModel.chatMessages.observe(viewLifecycleOwner, Observer { messages ->
 
-        // Observe chat messages
-        viewModel.chatMessages.observe(viewLifecycleOwner) { messages ->
-            adapter.setMessages(messages)
-            recyclerView.scrollToPosition(messages.size - 1)
-
-            // If the last message is from the bot and user used voice input
-            val lastMessage = messages.lastOrNull()
-            if (usedSpeechToText && lastMessage != null && lastMessage.role == "assistant" && lastMessage.content != null) {
-                handleTTSWithOptionalCorrections(lastMessage.content)
-                usedSpeechToText = false // Reset flag
+            val lastMessageOriginal = messages.lastOrNull()
+            if (usedSpeechToText && lastMessageOriginal != null && lastMessageOriginal.role == "assistant" && lastMessageOriginal.content != null) {
+                speakMultiLanguageText(lastMessageOriginal.content)
+                usedSpeechToText = false
             }
-        }
 
-        // Observe loading state
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
-            sendButton.isEnabled = !isLoading
-            micButton.isEnabled = !isLoading
-        }
+            adapter.setMessages(messages)
 
-        // Setup click listeners
+            if (messages.isNotEmpty()) {
+                recyclerView.scrollToPosition(messages.size - 1)
+            }
+        })
+
+        viewModel.isLoading.observe(viewLifecycleOwner, Observer { isLoading ->
+            loadingSpinner.visibility = if (isLoading == true) View.VISIBLE else View.GONE // Rõ ràng hơn
+            sendButton.isEnabled = !(isLoading ?: false)
+            micButton.isEnabled = !(isLoading ?: false)
+        })
+
         sendButton.setOnClickListener {
             sendMessage()
         }
@@ -139,47 +157,140 @@ class RolePlayChatFragment : Fragment() {
         }
     }
 
-    private fun detectLanguageAndSpeak(text: String) {
-        val languageIdentifier = com.google.mlkit.nl.languageid.LanguageIdentification.getClient()
-        languageIdentifier.identifyLanguage(text)
-            .addOnSuccessListener { languageCode ->
-                if (languageCode != "und") {
-                    val locale = Locale(languageCode)
-                    if (textToSpeech.isLanguageAvailable(locale) >= TextToSpeech.LANG_AVAILABLE) {
-                        textToSpeech.language = locale
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            isTtsInitialized = true
+            Log.d("TTS", "TextToSpeech initialized successfully.")
+            try {
+                val voices = textToSpeech.voices
+                // Logic tìm giọng nữ (ưu tiên offline)
+                for (voice in voices) {
+                    val lang = voice.locale.language
+                    val name = voice.name.toLowerCase(Locale.ROOT)
+
+                    if ((lang == "vi" || lang == "vie")) {
+                        if (name.contains("female") || name.contains("nữ")) {
+                            if (vietnameseVoice == null || (!voice.isNetworkConnectionRequired && vietnameseVoice!!.isNetworkConnectionRequired)) {
+                                vietnameseVoice = voice
+                            }
+                        } else if (vietnameseVoice == null && (!voice.isNetworkConnectionRequired)) { // Lấy tạm giọng nam/khác nếu chưa có giọng nữ
+                            vietnameseVoice = voice
+                        }
+                    } else if (lang == "en") {
+                        if (name.contains("female") || name.contains("nữ")) {
+                            if (englishVoice == null || (!voice.isNetworkConnectionRequired && englishVoice!!.isNetworkConnectionRequired)) {
+                                englishVoice = voice
+                            }
+                        } else if (englishVoice == null && (!voice.isNetworkConnectionRequired)) {
+                            englishVoice = voice
+                        }
                     }
-                    speakOut(text)
-                } else {
-                    Log.d("TTS", "Unable to identify language")
-                    speakOut(text) // Fallback
                 }
+                // Log giọng đã chọn hoặc fallback
+                if (vietnameseVoice != null) Log.i("TTS", "Final Vietnamese voice: ${vietnameseVoice!!.name}")
+                else { Log.w("TTS", "No specific Vietnamese voice. Setting Locale VI."); textToSpeech.language = Locale("vi", "VN") }
+
+                if (englishVoice != null) Log.i("TTS", "Final English voice: ${englishVoice!!.name}")
+                else { Log.w("TTS", "No specific English voice. Setting Locale EN."); textToSpeech.language = Locale.ENGLISH }
+
+            } catch (e: Exception) {
+                Log.e("TTS", "Error getting or setting voices: ${e.message}", e)
             }
-            .addOnFailureListener {
-                Log.e("TTS", "Language detection failed", it)
-                speakOut(text) // Fallback
-            }
-    }
-
-    fun handleTTSWithOptionalCorrections(text: String) {
-        val parts = text.split("[CORRECTIONS]", ignoreCase = true)
-
-        val englishPart = parts.getOrNull(0)?.trim()
-        val vietnamesePart = parts.getOrNull(1)?.trim()
-
-        if (!englishPart.isNullOrBlank()) {
-            detectLanguageAndSpeak(englishPart)
-        }
-
-        if (!vietnamesePart.isNullOrBlank()) {
-            detectLanguageAndSpeak(vietnamesePart)
+        } else {
+            isTtsInitialized = false
+            Log.e("TTS", "TTS Initialization Failed! Status: $status")
+            Toast.makeText(requireContext(), "Không thể khởi tạo TextToSpeech.", Toast.LENGTH_SHORT).show()
         }
     }
 
 
-    private fun speakOut(text: String) {
-        textToSpeech.speak(text, TextToSpeech.QUEUE_ADD, null, null)
+    private fun parseTextWithLanguageTags(inputText: String): List<TextSegment> {
+        val segments = mutableListOf<TextSegment>()
+        var currentIndex = 0
+        val startTag = "<en>"
+        val endTag = "</en>"
+        while (currentIndex < inputText.length) {
+            val enTagStartIndex = inputText.indexOf(startTag, currentIndex)
+            if (enTagStartIndex == -1) {
+                if (currentIndex < inputText.length) segments.add(TextSegment(inputText.substring(currentIndex).trim(), "vi"))
+                break
+            }
+            if (enTagStartIndex > currentIndex) segments.add(TextSegment(inputText.substring(currentIndex, enTagStartIndex).trim(), "vi"))
+            val enTagEndIndex = inputText.indexOf(endTag, enTagStartIndex + startTag.length)
+            if (enTagEndIndex == -1) {
+                Log.w("Parser", "Malformed <en> tag at index $enTagStartIndex. Treating rest as Vietnamese.")
+                if (enTagStartIndex < inputText.length) segments.add(TextSegment(inputText.substring(enTagStartIndex).trim(), "vi"))
+                break
+            }
+            val englishText = inputText.substring(enTagStartIndex + startTag.length, enTagEndIndex).trim()
+            segments.add(TextSegment(englishText, "en"))
+            currentIndex = enTagEndIndex + endTag.length
+        }
+        return segments.filter { it.text.isNotBlank() }
     }
 
+    private fun speakMultiLanguageText(fullText: String?) {
+        if (fullText.isNullOrBlank()) {
+            Log.d("TTS", "speakMultiLanguageText: fullText is null or blank.")
+            return
+        }
+        if (!isTtsInitialized) {
+            Toast.makeText(requireContext(), "TTS chưa sẵn sàng.", Toast.LENGTH_SHORT).show()
+            Log.e("TTS", "TTS not ready when trying to speak.")
+            return
+        }
+
+        val segments = parseTextWithLanguageTags(fullText)
+        if (segments.isEmpty() && fullText.isNotBlank()) { // Xử lý trường hợp không có tag nhưng vẫn có text
+            Log.d("TTS", "No <en> tags found. Speaking raw text with default (likely Vietnamese) voice.")
+            if (vietnameseVoice != null) textToSpeech.voice = vietnameseVoice
+            else textToSpeech.language = Locale("vi", "VN")
+            textToSpeech.speak(fullText, TextToSpeech.QUEUE_FLUSH, null, "fallback_${System.currentTimeMillis()}")
+            return
+        }
+        if (segments.isEmpty()){ // Hoàn toàn không có gì để nói
+            return
+        }
+
+
+        textToSpeech.stop() // Dừng và xóa hàng đợi trước khi nói các đoạn mới
+
+        var utteranceIdCounter = 0
+        for (segment in segments) {
+            val uniqueUtteranceId = "utt_${System.currentTimeMillis()}_${utteranceIdCounter++}"
+            val params = Bundle() // Để đó nếu sau này cần dùng với UtteranceProgressListener
+
+            if (segment.langCode == "en") {
+                if (englishVoice != null) {
+                    val setResult = textToSpeech.setVoice(englishVoice)
+                    if (setResult != TextToSpeech.SUCCESS) {
+                        Log.w("TTS", "Failed to set specific English voice for '${segment.text}', falling back to Locale.")
+                        textToSpeech.language = Locale.ENGLISH
+                    }
+                } else {
+                    textToSpeech.language = Locale.ENGLISH
+                    Log.w("TTS", "No specific English voice, using Locale.ENGLISH for '${segment.text}'")
+                }
+                Log.d("TTS", "Speaking English: '${segment.text}'")
+                textToSpeech.speak(segment.text, TextToSpeech.QUEUE_ADD, params, uniqueUtteranceId)
+            } else { // Mặc định là "vi"
+                if (vietnameseVoice != null) {
+                    val setResult = textToSpeech.setVoice(vietnameseVoice)
+                    if (setResult != TextToSpeech.SUCCESS) {
+                        Log.w("TTS", "Failed to set specific Vietnamese voice for '${segment.text}', falling back to Locale.")
+                        textToSpeech.language = Locale("vi", "VN")
+                    }
+                } else {
+                    textToSpeech.language = Locale("vi", "VN")
+                    Log.w("TTS", "No specific Vietnamese voice, using Locale VIETNAMESE for '${segment.text}'")
+                }
+                Log.d("TTS", "Speaking Vietnamese: '${segment.text}'")
+                textToSpeech.speak(segment.text, TextToSpeech.QUEUE_ADD, params, uniqueUtteranceId)
+            }
+        }
+    }
+
+    // --- Các hàm còn lại của Fragment (sendMessage, checkAudioPermission, etc.) ---
     private fun sendMessage() {
         val message = inputMessage.text.toString().trim()
         if (message.isNotEmpty()) {
@@ -191,43 +302,46 @@ class RolePlayChatFragment : Fragment() {
     }
 
     private fun checkAudioPermissionAndStartRecognition() {
-        if (ContextCompat.checkSelfPermission(
+        when {
+            ContextCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                requireActivity(),
-                arrayOf(Manifest.permission.RECORD_AUDIO),
-                RECORD_AUDIO_PERMISSION_CODE
-            )
-        } else {
-            startSpeechRecognition()
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                startSpeechRecognition()
+            }
+            else -> {
+                requestAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
         }
     }
 
     private fun startSpeechRecognition() {
-        speechActivityResultLauncher.launch(speechRecognitionIntent)
+        try {
+            speechActivityResultLauncher.launch(speechRecognitionIntent)
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Lỗi khởi động nhận diện giọng nói: ${e.message}", Toast.LENGTH_LONG).show()
+            Log.e("STT", "Error launching speech recognizer", e)
+        }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == RECORD_AUDIO_PERMISSION_CODE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startSpeechRecognition()
-            } else {
-                Toast.makeText(requireContext(), "Cần cấp quyền thu âm để sử dụng tính năng này", Toast.LENGTH_SHORT).show()
-            }
+    override fun onPause() {
+        super.onPause()
+        if (this::textToSpeech.isInitialized && textToSpeech.isSpeaking) {
+            textToSpeech.stop()
+            Log.d("TTS", "TTS stopped onPause.")
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        speechRecognizer.destroy()
-        textToSpeech.shutdown()
+        if (this::speechRecognizer.isInitialized) {
+            speechRecognizer.destroy()
+        }
+        if (this::textToSpeech.isInitialized) {
+            textToSpeech.stop()
+            textToSpeech.shutdown()
+            Log.d("TTS", "TTS shutdown onDestroyView.")
+        }
+        // _binding = null // Nếu bạn sử dụng ViewBinding, hãy thêm dòng này
     }
 }

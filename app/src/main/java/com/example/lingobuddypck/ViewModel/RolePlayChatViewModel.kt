@@ -1,5 +1,6 @@
 package com.example.lingobuddypck.ViewModel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -18,6 +19,7 @@ class RolePlayChatViewModel(
 ) : ViewModel() {
 
     private val maxHistorySize = 5
+    private lateinit var  welcome:Message
 
     private val _chatMessages = MutableLiveData<List<Message>>()
     val chatMessages: LiveData<List<Message>> = _chatMessages
@@ -32,9 +34,9 @@ class RolePlayChatViewModel(
     private val fullHistory = mutableListOf(systemMessage)
 
     init {
-        val welcome = Message("system", "Chúng ta sẽ bắt đầu vai trò: Tôi: $aiRole - Bạn: $userRole - Bối cảnh: $context. Bạn sẵn sàng chưa?")
+        welcome = Message("system", "Chúng ta sẽ bắt đầu vai trò: Tôi: $aiRole - Bạn: $userRole - Bối cảnh: $context. Bạn sẵn sàng chưa?")
         fullHistory.add(welcome)
-        _chatMessages.value = fullHistory.filter { it != systemMessage }
+        _chatMessages.value = fullHistory.filter { it != systemMessage}
         isWaitingForResponse.value=false
     }
 
@@ -54,8 +56,9 @@ class RolePlayChatViewModel(
             override fun onResponse(call: Call<ChatResponse>, response: Response<ChatResponse>) {
                 isLoading.postValue(false)
                 val aiResponse = response.body()?.output?.choices?.getOrNull(0)?.text
+                val output = aiResponse?.replace(Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL), "")
                 if (!aiResponse.isNullOrEmpty()) {
-                    val assistantMessage = Message("assistant", aiResponse)
+                    val assistantMessage = Message("assistant", output)
                     fullHistory.add(assistantMessage)
                     isWaitingForResponse.value=false
                     _chatMessages.postValue(fullHistory.filter { it != systemMessage })
@@ -74,30 +77,31 @@ class RolePlayChatViewModel(
         } else {
             fullHistory
         }
-        return listOf(systemMessage) + recent.filter { it != systemMessage }
+        return listOf(systemMessage) + recent.filter { it != systemMessage &&  it != welcome}
     }
 
     private fun buildSystemPrompt(aiRole: String, userRole: String, context: String): String {
         return """
-        You are playing the role of "$aiRole" in the context of "$context".
-        The user is acting as "$userRole".
+        Bạn đang đóng vai "$aiRole" trong bối cảnh "$context".  
+        Người dùng đang đóng vai "$userRole".
 
-        Respond naturally, in fluent English, as if you are a real person playing "$aiRole".
+        Hãy phản hồi một cách tự nhiên, bằng tiếng Anh trôi chảy, như thể bạn là một người thật đang nhập vai "$aiRole".
 
-        Encourage the user to continue by asking relevant questions or adding context.
-        IMPORTANT REMINDER FOR THIS ROLE-PLAY:
-        As per general instructions, ALL English text you provide in your response MUST be wrapped with <en> and </en> tags.
-        This includes your main conversational parts and any examples or phrases you use.
-        For instance: 'I think <en>that's a wonderful idea</en>.' or 'You could also say <en>it's a pleasure to meet you</en>.'
+        Hãy khuyến khích người dùng tiếp tục bằng cách đặt câu hỏi phù hợp hoặc bổ sung thêm ngữ cảnh.
 
-        If the user's English has any errors (vocabulary, grammar, or intonation), include a [CORRECTIONS] section at the end of your message, written in Vietnamese.
+        Nếu tiếng Anh của người dùng có bất kỳ lỗi nào (từ vựng, ngữ pháp, ngữ điệu), hãy thêm một phần [CORRECTIONS] ở cuối tin nhắn của bạn, viết bằng tiếng Việt.
 
-        Your response format should be:
-        <English message here>
+        LƯU Ý QUAN TRỌNG TRONG PHẦN NHẬP VAI NÀY:  
+        Theo hướng dẫn chung, TOÀN BỘ nội dung tiếng Anh bạn sử dụng trong phản hồi PHẢI được bọc trong cặp thẻ `<en>` và `</en>`.  
+        Ví dụ: 'Bạn nói <en>You will have to order food from restaurant nearby</en> là sai. Bạn nên nói <en>You will have to order food from a nearby restaurant</en>.'
 
-        [CORRECTIONS]
-        <Corrections in Vietnamese and English correct version, only if needed>
+        Định dạng phản hồi của bạn nên là:
+        <en><Phần tiếng Anh của bạn ở đây></en>
+
+        [Sửa Lỗi]  
+        <Phần sửa lỗi cho người dùng bằng tiếng Việt và phiên bản tiếng Anh đã chỉnh sửa nếu cần. Bạn phải đưa ra phản hồi ngay cả với những lỗi nhỏ>
     """.trimIndent()
     }
+
 
 }

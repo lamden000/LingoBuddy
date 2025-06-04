@@ -74,7 +74,6 @@ class ChatViewModel : ViewModel() {
                         interest = document.getString("interest"),
                         otherInfo = document.getString("otherInfo")
                     )
-                    // ⭐ LẤY PHONG CÁCH AI TỪ FIREBASE ⭐
                     currentAiTone = document.getString("aiChatTone") ?: "trung lập và thân thiện"
                     Log.d("ChatViewModel", "Phong cách AI được fetch từ Firebase: $currentAiTone")
 

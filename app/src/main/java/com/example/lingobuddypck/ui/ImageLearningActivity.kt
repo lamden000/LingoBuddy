@@ -8,15 +8,20 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.Observer
@@ -39,16 +44,22 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var recyclerView: RecyclerView
     private lateinit var inputMessage: EditText
     private lateinit var sendButton: Button
+    private lateinit var micButton: ImageButton
     private lateinit var selectImageButton: Button
     private lateinit var openCameraButton: Button
     private lateinit var imagePreview: ImageView
     private lateinit var viewModel: ImageLearningViewModel
     private lateinit var chatAdapter: ChatAdapter
     private lateinit var textToSpeech: TextToSpeech
+    private lateinit var speechRecognizer: SpeechRecognizer
+    private lateinit var speechRecognitionIntent: Intent
+    private lateinit var speechActivityResultLauncher: ActivityResultLauncher<Intent>
+    private val RECORD_AUDIO_PERMISSION_CODE = 123
 
     private var selectedImageUri: Uri? = null
     private var tempImageUri: Uri? = null
     private var currentActualMessages: List<Message> = listOf()
+    private var usedSpeechToText = false
 
     // Launcher for picking image from gallery
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -85,7 +96,6 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setContentView(R.layout.activity_image_learning)
 
         viewModel = ViewModelProvider(this)[ImageLearningViewModel::class.java]
-
         recyclerView = findViewById(R.id.recyclerView)
         inputMessage = findViewById(R.id.inputMessage)
         sendButton = findViewById(R.id.sendButton)
@@ -93,6 +103,7 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         openCameraButton = findViewById(R.id.openCameraButton)
         imagePreview = findViewById(R.id.imagePreview)
         textToSpeech = TextToSpeech(this, this)
+        micButton = findViewById(R.id.micButtonIMG)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         chatAdapter = ChatAdapter(mutableListOf(), this, FirebaseWordRepository(),
@@ -103,6 +114,12 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         selectImageButton.setOnClickListener {
             val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
             imagePickerLauncher.launch(intent)
+        }
+
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        speechRecognitionIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
         }
 
         openCameraButton.setOnClickListener {
@@ -124,23 +141,35 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         sendButton.setOnClickListener {
-            val message = inputMessage.text.toString().trim()
-            if (message.isEmpty() && selectedImageUri == null) {
-                Toast.makeText(this, "Please enter a message or select an image", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            viewModel.sendImageAndMessage(this, message, selectedImageUri)
-
-            inputMessage.text.clear()
-            imagePreview.visibility = View.GONE
-            imagePreview.setImageURI(null) // Clear image explicitly
-            selectedImageUri = null
-            tempImageUri = null
+            sendMessage()
         }
+
+        speechActivityResultLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == RESULT_OK && result.data != null) {
+                    val results = result.data!!.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                    results?.let {
+                        if (it.isNotEmpty()) {
+                            inputMessage.setText(it[0])
+                            usedSpeechToText = true
+                            sendMessage()
+                        }
+                    }
+                } else {
+                    Toast.makeText(this, "Không nhận diện được giọng nói", Toast.LENGTH_SHORT).show()
+                }
+            }
+        micButton.setOnClickListener { checkAudioPermissionAndStartRecognition() }
 
         viewModel.chatMessages.observe(this) { chatMessages ->
             currentActualMessages = chatMessages
+
+            val lastMessageOriginal = chatMessages.lastOrNull()
+            if (usedSpeechToText && lastMessageOriginal != null && lastMessageOriginal.role == "AI" && lastMessageOriginal.content != null) {
+                detectAndSpeak(lastMessageOriginal.content)
+                usedSpeechToText = false
+            }
+
             chatAdapter.setMessages(chatMessages)
             if (chatMessages.isNotEmpty()) {
                 recyclerView.scrollToPosition(chatMessages.size - 1)
@@ -198,6 +227,51 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    private fun checkAudioPermissionAndStartRecognition() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), RECORD_AUDIO_PERMISSION_CODE)
+        } else {
+            startSpeechRecognition()
+        }
+    }
+
+    private fun sendMessage() {
+        val message = inputMessage.text.toString().trim()
+        if (message.isEmpty() && selectedImageUri == null) {
+            Toast.makeText(this, "Please enter a message or select an image", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        viewModel.sendImageAndMessage(this, message, selectedImageUri)
+
+        inputMessage.text.clear()
+        imagePreview.visibility = View.GONE
+        imagePreview.setImageURI(null) // Clear image explicitly
+        selectedImageUri = null
+        tempImageUri = null
+    }
+
+    private fun startSpeechRecognition() {
+        try {
+            speechActivityResultLauncher.launch(speechRecognitionIntent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Lỗi khởi động nhận diện giọng nói: ${e.message}", Toast.LENGTH_LONG).show()
+            Log.e("STT", "Error launching speech recognizer", e)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == RECORD_AUDIO_PERMISSION_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startSpeechRecognition()
+            } else {
+                Toast.makeText(this, "Cần cấp quyền thu âm để sử dụng tính năng này", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+
     private fun launchCamera() {
         try {
             tempImageUri = createImageFileUri()
@@ -254,5 +328,20 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun fallbackSpeak(text: String, textToSpeech: TextToSpeech) {
         textToSpeech.language = Locale("vi", "VN")
         textToSpeech.speak(text, TextToSpeech.QUEUE_ADD, null, null)
+    }
+    override fun onPause() {
+        super.onPause()
+        if (this::textToSpeech.isInitialized && textToSpeech.isSpeaking) {
+            textToSpeech.stop()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (this::speechRecognizer.isInitialized) speechRecognizer.destroy()
+        if (this::textToSpeech.isInitialized) {
+            textToSpeech.stop()
+            textToSpeech.shutdown()
+        }
     }
 }

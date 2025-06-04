@@ -14,7 +14,6 @@
         android:ems="10"
         android:hint="Vai trò của bạn"
         android:inputType="text"
-        app:layout_constraintBottom_toTopOf="@+id/btn_start_conversation"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toEndOf="@+id/editTxtAIRole"
@@ -25,31 +24,33 @@
         android:id="@+id/text_user_role_custom"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="88dp"
+        android:layout_marginTop="28dp"
+        android:drawableEnd="@drawable/ic_user"
         android:text="Your Role"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.884"
+        app:layout_constraintHorizontal_bias="0.874"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_swap_roles" />
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
 
     <TextView
         android:id="@+id/text_ai_role_custom"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
+        android:layout_marginTop="28dp"
+        android:drawableStart="@drawable/ic_robot"
         android:text="AI's Role"
-        app:layout_constraintBottom_toTopOf="@+id/btn_start_conversation"
         app:layout_constraintEnd_toStartOf="@+id/text_user_role_custom"
-        app:layout_constraintHorizontal_bias="0.011"
+        app:layout_constraintHorizontal_bias="0.016"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView"
-        app:layout_constraintVertical_bias="0.136" />
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
 
     <TextView
         android:id="@+id/text_user_role"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="40dp"
+        android:drawableStart="@drawable/ic_user"
         android:text="Your Role"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -68,6 +69,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="AI's Role"
+        android:drawableStart="@drawable/ic_robot"
         app:layout_constraintTop_toBottomOf="@id/spinner_user_role"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="16dp" />
@@ -85,6 +87,7 @@
         android:id="@+id/text_context"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:drawableStart="@drawable/ic_context"
         android:text="Context"
         app:layout_constraintTop_toBottomOf="@id/spinner_ai_role"
         app:layout_constraintStart_toStartOf="parent"
@@ -104,9 +107,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Swap Roles"
+        android:drawableEnd="@drawable/ic_swap_roles"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/rounded_button"
         app:layout_constraintTop_toBottomOf="@id/spinner_context"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="24dp" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Start Conversation -->
 
@@ -117,6 +122,7 @@
         android:layout_marginTop="16dp"
         android:background="@drawable/rounded_button"
         android:text="Start Conversation"
+        android:drawableEnd="@drawable/ic_start_conversation"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
@@ -154,7 +160,6 @@
         android:ems="10"
         android:hint="Vai trò của AI"
         android:inputType="text"
-        app:layout_constraintBottom_toTopOf="@+id/btn_start_conversation"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_ai_role_custom"
         app:layout_constraintVertical_bias="0.083" />
@@ -163,12 +168,13 @@
         android:id="@+id/editTxtCustomContext"
         android:layout_width="327dp"
         android:layout_height="88dp"
-        android:layout_marginTop="476dp"
+        android:layout_marginTop="492dp"
         android:ems="10"
         android:hint="Bối cảnh tùy chọn"
         android:inputType="text"
         android:textAlignment="gravity"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.692"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

@@ -13,7 +13,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.lingobuddypck.R
-import com.example.lingobuddypck.databinding.FragmentNotificationsBinding
+import com.example.lingobuddypck.databinding.FragmentSettingBinding
 import com.example.lingobuddypck.ui.LoginActivity
 import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.auth.FirebaseAuth
@@ -21,7 +21,7 @@ import com.google.firebase.auth.FirebaseAuth
 
 class SettingFragment : Fragment() {
 
-    private var _binding: FragmentNotificationsBinding? = null // Giả sử bạn dùng ViewBinding
+    private var _binding: FragmentSettingBinding? = null // Giả sử bạn dùng ViewBinding
     private val binding get() = _binding!!
 
     private lateinit var viewModel: SettingViewModel
@@ -30,6 +30,7 @@ class SettingFragment : Fragment() {
     private lateinit var buttonEditInfo: Button
     private lateinit var buttonOpenAiToneDialog: Button // Nút bạn đã khai báo
     private lateinit var buttonLogout: Button
+    private lateinit var buttonChangePassword: Button
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -37,7 +38,7 @@ class SettingFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         viewModel = ViewModelProvider(this).get(SettingViewModel::class.java)
-        _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
+        _binding = FragmentSettingBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
         // Khởi tạo views từ binding
@@ -46,6 +47,7 @@ class SettingFragment : Fragment() {
         buttonEditInfo = binding.buttonPersonalInfo
         buttonOpenAiToneDialog = binding.buttonPersonalize // Đây là button bạn muốn dùng
         buttonLogout = binding.buttonLogout
+        buttonChangePassword = binding.buttonChangePassword
 
         buttonEditInfo.setOnClickListener {
             showPersonalInfoDialog()
@@ -53,6 +55,10 @@ class SettingFragment : Fragment() {
 
         buttonOpenAiToneDialog.setOnClickListener { // Gán listener cho nút này
             showAiToneDialog()
+        }
+
+        buttonChangePassword.setOnClickListener {
+            handlePasswordChange()
         }
 
         buttonLogout.setOnClickListener {
@@ -134,6 +140,55 @@ class SettingFragment : Fragment() {
             }
             .create()
         dialog.show()
+    }
+
+    private fun handlePasswordChange() {
+        val user = FirebaseAuth.getInstance().currentUser
+        
+        // Check if user signed in with Google
+        val isGoogleSignIn = user?.providerData?.any { 
+            it.providerId == "google.com" 
+        } ?: false
+
+        if (isGoogleSignIn) {
+            // Show dialog for Google users
+            AlertDialog.Builder(requireContext())
+                .setTitle("Không thể đổi mật khẩu")
+                .setMessage("Bạn đã đăng nhập bằng tài khoản Google. Vui lòng quản lý mật khẩu thông qua cài đặt tài khoản Google của bạn.")
+                .setPositiveButton("Đã hiểu") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
+        } else {
+            // Show confirmation dialog for email users
+            AlertDialog.Builder(requireContext())
+                .setTitle("Đổi mật khẩu")
+                .setMessage("Chúng tôi sẽ gửi link đặt lại mật khẩu đến email của bạn: ${user?.email}")
+                .setPositiveButton("Gửi") { dialog, _ ->
+                    user?.email?.let { email ->
+                        FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+                            .addOnSuccessListener {
+                                Toast.makeText(
+                                    context,
+                                    "Đã gửi link đặt lại mật khẩu đến email của bạn",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(
+                                    context,
+                                    "Lỗi: ${e.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                    }
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Hủy") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
+        }
     }
 
     private fun setupObservers() {

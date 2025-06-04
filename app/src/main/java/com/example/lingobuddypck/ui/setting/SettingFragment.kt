@@ -1,4 +1,4 @@
-package com.example.lingobuddypck.ui.notifications
+package com.example.lingobuddypck.ui.setting
 
 import android.content.Context
 import android.content.Intent
@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -20,12 +19,12 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.auth.FirebaseAuth
 
 
-class NotificationsFragment : Fragment() {
+class SettingFragment : Fragment() {
 
     private var _binding: FragmentNotificationsBinding? = null // Giả sử bạn dùng ViewBinding
     private val binding get() = _binding!!
 
-    private lateinit var viewModel: NotificationsViewModel
+    private lateinit var viewModel: SettingViewModel
     private lateinit var scoreTextView: TextView
     private lateinit var rankTextView: TextView
     private lateinit var buttonEditInfo: Button
@@ -37,7 +36,7 @@ class NotificationsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        viewModel = ViewModelProvider(this).get(NotificationsViewModel::class.java)
+        viewModel = ViewModelProvider(this).get(SettingViewModel::class.java)
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         val root: View = binding.root
 

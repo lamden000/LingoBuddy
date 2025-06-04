@@ -1,4 +1,4 @@
-package com.example.lingobuddypck.ui.notifications
+package com.example.lingobuddypck.ui.setting
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -12,8 +12,9 @@ import com.google.firebase.firestore.SetOptions
 
 import android.util.Log
 import com.example.lingobuddypck.data.UserProfileBundle
+import com.example.lingobuddypck.utils.RankUtils
 
-class NotificationsViewModel : ViewModel() {
+class SettingViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
@@ -52,17 +53,45 @@ class NotificationsViewModel : ViewModel() {
 
     // --- Các hàm fetch hiện tại của bạn ---
     fun fetchUserProficiencyData() {
-        _isFetchingDetails.value = true // Ví dụ: bạn có thể muốn set loading ở đây
-        // TODO: Implement your logic to fetch proficiency score and rank
-        // Ví dụ:
-        // viewModelScope.launch {
-        //      // Giả lập fetch
-        //      kotlinx.coroutines.delay(1000)
-        //      _userScoreText.postValue("90/100")
-        //      _userRankText.postValue("Chuyên Gia")
-        //      _isFetchingDetails.postValue(false) // Kết thúc loading nếu chỉ fetch điểm ở đây
-        // }
-        Log.d("NotificationsViewModel", "fetchUserProficiencyData called")
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            _errorMessage.value = "Người dùng chưa đăng nhập."
+            _userScoreText.value = null
+            _userRankText.value = null
+            _isFetchingDetails.value = false
+            return
+        }
+
+        _isFetchingDetails.value = true
+
+        db.collection("users").document(userId)
+            .collection("proficiencyTestResults")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (!documents.isEmpty) {
+                    val latestResult = documents.documents[0]
+                    val score = latestResult.getLong("score")?.toInt() ?: 0
+                    
+                    // Update score text
+                    _userScoreText.value = "$score/100"
+                    
+                    // Get and update rank text based on score
+                    val rank = RankUtils.getRankFromScore(score)
+                    _userRankText.value = rank?.displayName ?: "Chưa xếp hạng"
+                } else {
+                    _userScoreText.value = "Chưa có điểm"
+                    _userRankText.value = "Chưa xếp hạng"
+                }
+                _isFetchingDetails.value = false
+            }
+            .addOnFailureListener { e ->
+                _errorMessage.value = "Lỗi khi tải điểm đánh giá: ${e.message}"
+                _userScoreText.value = null
+                _userRankText.value = null
+                _isFetchingDetails.value = false
+            }
     }
 
     fun fetchCurrentUserInfo() { // Hàm này sẽ fetch cả personal info và aiChatTone

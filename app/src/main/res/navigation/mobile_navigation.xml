@@ -17,6 +17,6 @@
 
     <fragment
         android:id="@+id/navigation_notifications"
-        android:name="com.example.lingobuddypck.ui.notifications.NotificationsFragment"
+        android:name="com.example.lingobuddypck.ui.setting.SettingFragment"
         tools:layout="@layout/fragment_notifications" />
 </navigation>

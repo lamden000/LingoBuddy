@@ -68,7 +68,6 @@ class PronunciationAiService(
             ```
         """.trimIndent()
 
-        // Make sure to use "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free" here
         val request = ChatRequest(model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", messages = listOf(
             Message("user", prompt)
         ), temperature = 0.7)
@@ -87,7 +86,6 @@ class PronunciationAiService(
             throw Exception("No response from AI for pronunciation check.")
         }
 
-        // --- Apply the filter BEFORE JSON extraction ---
         val cleanedResponseText = removeThinkTags(responseBodyText)
         // ---------------------------------------------
 

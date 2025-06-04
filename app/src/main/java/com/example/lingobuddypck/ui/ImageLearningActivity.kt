@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -12,14 +13,23 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.RadioButton
+import android.widget.RadioGroup
+import android.widget.ScrollView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -33,6 +43,8 @@ import com.example.lingobuddypck.ViewModel.ImageLearningViewModel
 import com.example.lingobuddypck.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.Services.Message
 import com.example.lingobuddypck.adapter.ChatAdapter
+import com.example.lingobuddypck.data.ImageQuiz
+import com.example.lingobuddypck.data.ImageQuizQuestion
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -61,13 +73,30 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var currentActualMessages: List<Message> = listOf()
     private var usedSpeechToText = false
 
+    private lateinit var generateQuizButton: Button
+    private lateinit var quizContainer: LinearLayout
+    private lateinit var quizQuestionsContainer: LinearLayout
+    private lateinit var submitQuizButton: Button
+    private val questionViews = mutableMapOf<String, RadioGroup>()
+
+    private lateinit var quizContainerView: ScrollView
+    private lateinit var quizImageView: ImageView
+
+    private lateinit var inputContainer: LinearLayout
+    private lateinit var actionButtonsContainer: LinearLayout
+
+    private lateinit var imagePreviewContainer: FrameLayout
+    private lateinit var closeImageButton: ImageButton
+
     // Launcher for picking image from gallery
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
                 selectedImageUri = uri
                 imagePreview.setImageURI(selectedImageUri)
-                imagePreview.visibility = View.VISIBLE
+                imagePreviewContainer.visibility = View.VISIBLE
+                generateQuizButton.isEnabled = true // Enable quiz generation when image is selected
+                viewModel.clearQuiz() // Clear any existing quiz
             }
         }
     }
@@ -76,7 +105,9 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (success) {
             selectedImageUri = tempImageUri
             imagePreview.setImageURI(selectedImageUri)
-            imagePreview.visibility = View.VISIBLE
+            imagePreviewContainer.visibility = View.VISIBLE
+            generateQuizButton.isEnabled = true // Enable quiz generation when image is captured
+            viewModel.clearQuiz() // Clear any existing quiz
         } else {
             tempImageUri = null
         }
@@ -102,8 +133,21 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         selectImageButton = findViewById(R.id.selectImageButton)
         openCameraButton = findViewById(R.id.openCameraButton)
         imagePreview = findViewById(R.id.imagePreview)
+        imagePreviewContainer = findViewById(R.id.imagePreviewContainer)
+        closeImageButton = findViewById(R.id.closeImageButton)
         textToSpeech = TextToSpeech(this, this)
         micButton = findViewById(R.id.micButtonIMG)
+
+        generateQuizButton = findViewById(R.id.generateQuizButton)
+        quizContainerView = findViewById(R.id.quizContainerView)
+        quizContainer = findViewById(R.id.quizContainer)
+        quizQuestionsContainer = findViewById(R.id.quizQuestionsContainer)
+        submitQuizButton = findViewById(R.id.submitQuizButton)
+        quizImageView = findViewById(R.id.quizImageView)
+        
+        // Get references to button containers
+        inputContainer = findViewById(R.id.inputContainer)
+        actionButtonsContainer = findViewById(R.id.actionButtonsContainer)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         chatAdapter = ChatAdapter(mutableListOf(), this, FirebaseWordRepository(),
@@ -188,6 +232,210 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             openCameraButton.isEnabled = !it
             sendButton.text = if (it) "Sending..." else "Send"
         }
+
+        setupQuizUI()
+        observeQuizState()
+
+        closeImageButton.setOnClickListener {
+            clearImage()
+        }
+    }
+
+    private fun setupQuizUI() {
+        generateQuizButton.setOnClickListener {
+            if (selectedImageUri != null) {
+                viewModel.generateQuizFromImage(this, selectedImageUri!!)
+                imagePreviewContainer.visibility = View.GONE
+            }
+        }
+
+        submitQuizButton.setOnClickListener {
+            submitQuizAnswers()
+        }
+    }
+
+    private fun observeQuizState() {
+        viewModel.isGeneratingQuiz.observe(this) { isGenerating ->
+            generateQuizButton.isEnabled = selectedImageUri != null && !isGenerating
+            if (isGenerating) {
+                showQuizLoadingState()
+            }
+        }
+
+        viewModel.currentQuiz.observe(this) { quiz ->
+            if (quiz != null) {
+                showQuiz(quiz)
+            } else {
+                hideQuiz()
+            }
+        }
+
+        viewModel.quizScore.observe(this) { score ->
+            if (score != null) {
+                showQuizResults(score.first, score.second)
+            }
+        }
+    }
+
+    private fun showQuizLoadingState() {
+        recyclerView.visibility = View.GONE
+        quizContainerView.visibility = View.VISIBLE
+        quizContainer.visibility = View.VISIBLE
+        quizQuestionsContainer.removeAllViews()
+        val loadingView = LayoutInflater.from(this).inflate(R.layout.quiz_loading_view, quizQuestionsContainer, false)
+        quizQuestionsContainer.addView(loadingView)
+        submitQuizButton.visibility = View.GONE
+        
+        // Hide input and action buttons
+        inputContainer.visibility = View.GONE
+        actionButtonsContainer.visibility = View.GONE
+    }
+
+    private fun showQuiz(quiz: ImageQuiz) {
+        recyclerView.visibility = View.GONE
+        quizContainerView.visibility = View.VISIBLE
+        quizContainer.visibility = View.VISIBLE
+        quizQuestionsContainer.removeAllViews()
+        questionViews.clear()
+
+        // Set the quiz image
+        selectedImageUri?.let { uri ->
+            quizImageView.setImageURI(uri)
+            quizImageView.visibility = View.VISIBLE
+        }
+
+        // Add questions (skipping the description)
+        quiz.questions.forEach { question ->
+            addQuestionToLayout(question)
+        }
+
+        submitQuizButton.visibility = View.VISIBLE
+        
+        // Hide input and action buttons
+        inputContainer.visibility = View.GONE
+        actionButtonsContainer.visibility = View.GONE
+    }
+
+    private fun addQuestionToLayout(question: ImageQuizQuestion) {
+        val questionLayout = LayoutInflater.from(this)
+            .inflate(R.layout.item_quiz_question, quizQuestionsContainer, false)
+
+        val questionText = questionLayout.findViewById<TextView>(R.id.questionText)
+        val optionsGroup = questionLayout.findViewById<RadioGroup>(R.id.optionsGroup)
+
+        questionText.text = question.question
+        
+        question.options.forEach { (key, text) ->
+            val radioButton = RadioButton(this).apply {
+                id = View.generateViewId()
+                this.text = "$key. $text"
+                layoutParams = RadioGroup.LayoutParams(
+                    RadioGroup.LayoutParams.MATCH_PARENT,
+                    RadioGroup.LayoutParams.WRAP_CONTENT
+                )
+                setPadding(16, 16, 16, 16)
+            }
+            optionsGroup.addView(radioButton)
+        }
+
+        questionViews[question.id] = optionsGroup
+        quizQuestionsContainer.addView(questionLayout)
+    }
+
+    private fun submitQuizAnswers() {
+        val answers = mutableMapOf<String, String>()
+        
+        questionViews.forEach { (questionId, radioGroup) ->
+            val selectedId = radioGroup.checkedRadioButtonId
+            if (selectedId != -1) {
+                val radioButton = findViewById<RadioButton>(selectedId)
+                val answerKey = radioButton.text.toString().substringBefore(".").trim()
+                answers[questionId] = answerKey.lowercase()
+            }
+        }
+
+        if (answers.size < questionViews.size) {
+            Toast.makeText(this, "Vui lòng trả lời tất cả câu hỏi", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        viewModel.submitQuizAnswers(answers)
+    }
+
+    private fun showQuizResults(score: Int, total: Int) {
+        val quiz = viewModel.currentQuiz.value ?: return
+        val quizResult = viewModel.quizResult.value ?: return
+        
+        quiz.questions.forEach { question ->
+            val radioGroup = questionViews[question.id] ?: return@forEach
+            val selectedId = radioGroup.checkedRadioButtonId
+            if (selectedId != -1) {
+                val radioButton = findViewById<RadioButton>(selectedId)
+                val selectedAnswer = radioButton.text.toString().substringBefore(".").trim().lowercase()
+                val feedback = quizResult.feedback[question.id]
+                
+                // Add feedback view below the question
+                val feedbackView = TextView(this).apply {
+                    val isCorrect = feedback?.status == "correct"
+                    text = if (isCorrect) {
+                        "✅ Chính xác!"
+                    } else {
+                        val correctOption = question.options[question.correctAnswer] ?: ""
+                        "❌ Đáp án đúng là: ${question.correctAnswer.uppercase()}. $correctOption\n\n${feedback?.explanation ?: ""}"
+                    }
+                    setTextColor(if (isCorrect) Color.GREEN else Color.RED)
+                    setPadding(32, 8, 32, 16)
+                }
+                
+                // Find the question layout and add feedback
+                val questionLayout = radioGroup.parent as ViewGroup
+                questionLayout.addView(feedbackView)
+                
+                // Disable all radio buttons after showing results
+                for (i in 0 until radioGroup.childCount) {
+                    radioGroup.getChildAt(i).isEnabled = false
+                }
+            }
+        }
+
+        // Show final score with percentage
+        val percentage = (score.toFloat() / total * 100).toInt()
+        AlertDialog.Builder(this)
+            .setTitle("Kết quả")
+            .setMessage("Bạn đã trả lời đúng $score/$total câu! ($percentage%)")
+            .setPositiveButton("OK") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+
+        // Disable submit button after showing results
+        submitQuizButton.isEnabled = false
+        
+        // Add a "Try Again" button
+        submitQuizButton.text = "Kết thúc"
+        submitQuizButton.isEnabled = true
+        submitQuizButton.setOnClickListener {
+            hideQuiz()
+            clearImage()
+            viewModel.clearQuiz()
+            submitQuizButton.text = "Nộp bài"
+            submitQuizButton.setOnClickListener { submitQuizAnswers() }
+        }
+    }
+
+    private fun hideQuiz() {
+        quizContainerView.visibility = View.GONE
+        quizContainer.visibility = View.GONE
+        quizQuestionsContainer.removeAllViews()
+        submitQuizButton.visibility = View.GONE
+        quizImageView.visibility = View.GONE
+        quizImageView.setImageURI(null)
+        questionViews.clear()
+        recyclerView.visibility = View.VISIBLE
+        
+        // Show input and action buttons
+        inputContainer.visibility = View.VISIBLE
+        actionButtonsContainer.visibility = View.VISIBLE
     }
 
     @Throws(IOException::class)
@@ -242,13 +490,22 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             return
         }
 
+        // Hide quiz if showing
+        hideQuiz()
+
         viewModel.sendImageAndMessage(this, message, selectedImageUri)
 
         inputMessage.text.clear()
-        imagePreview.visibility = View.GONE
-        imagePreview.setImageURI(null) // Clear image explicitly
+        imagePreviewContainer.visibility = View.GONE
+        clearImage()
+    }
+
+    private fun clearImage() {
+        imagePreview.setImageURI(null)
         selectedImageUri = null
         tempImageUri = null
+        imagePreviewContainer.visibility = View.GONE
+        generateQuizButton.isEnabled = false
     }
 
     private fun startSpeechRecognition() {

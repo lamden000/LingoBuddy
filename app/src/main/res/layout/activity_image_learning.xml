@@ -12,17 +12,89 @@
       android:layout_weight="1"
       android:background="@drawable/chat_background" />
 
-  <!-- Image preview (if needed) -->
-  <ImageView
-      android:id="@+id/imagePreview"
+  <!-- Image preview with close button -->
+  <FrameLayout
+      android:id="@+id/imagePreviewContainer"
       android:layout_width="match_parent"
-      android:layout_height="200dp"
+      android:layout_height="wrap_content"
       android:visibility="gone"
-      android:layout_marginTop="8dp"
-      android:scaleType="centerCrop" />
+      android:layout_marginTop="8dp">
 
-  <!-- Camera + Select Image Buttons -->
+      <ImageView
+          android:id="@+id/imagePreview"
+          android:layout_width="match_parent"
+          android:layout_height="200dp"
+          android:scaleType="centerCrop" />
+
+      <ImageButton
+          android:id="@+id/closeImageButton"
+          android:layout_width="32dp"
+          android:layout_height="32dp"
+          android:layout_gravity="top|end"
+          android:layout_margin="8dp"
+          android:background="@drawable/circle_background"
+          android:src="@android:drawable/ic_menu_close_clear_cancel"
+          android:padding="4dp"
+          android:contentDescription="Close image" />
+  </FrameLayout>
+
+  <!-- Quiz Container -->
+  <ScrollView
+      android:id="@+id/quizContainerView"
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:visibility="gone"
+      android:fillViewport="true">
+      
+      <LinearLayout
+          android:id="@+id/quizContainer"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="vertical"
+          android:visibility="gone"
+          android:background="@drawable/rounded_edittext_background"
+          android:padding="16dp"
+          android:layout_marginTop="8dp">
+
+          <TextView
+              android:id="@+id/quizTitle"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:text="Quiz về hình ảnh"
+              android:textStyle="bold"
+              android:textSize="18sp"
+              android:gravity="center"
+              android:layout_marginBottom="8dp"/>
+
+          <ImageView
+              android:id="@+id/quizImageView"
+              android:layout_width="match_parent"
+              android:layout_height="250dp"
+              android:scaleType="fitCenter"
+              android:layout_marginBottom="16dp"
+              android:background="@android:color/darker_gray"/>
+
+          <LinearLayout
+              android:id="@+id/quizQuestionsContainer"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="vertical"/>
+
+          <Button
+              android:id="@+id/submitQuizButton"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Nộp bài"
+              android:layout_gravity="center"
+              android:layout_marginTop="8dp"
+              android:visibility="gone"/>
+      </LinearLayout>
+  </ScrollView>
+
+  <!-- Camera + Select Image + Quiz Buttons -->
   <LinearLayout
+      android:id="@+id/actionButtonsContainer"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:orientation="horizontal"
@@ -43,10 +115,20 @@
         android:layout_height="wrap_content"
         android:text="🖼 Chọn ảnh"
         android:layout_marginStart="8dp" />
+
+    <Button
+        android:id="@+id/generateQuizButton"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:text="🎯 Quiz"
+        android:layout_marginStart="8dp"
+        android:enabled="false"/>
   </LinearLayout>
 
   <!-- Input + Send Button -->
   <LinearLayout
+      android:id="@+id/inputContainer"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:orientation="horizontal"

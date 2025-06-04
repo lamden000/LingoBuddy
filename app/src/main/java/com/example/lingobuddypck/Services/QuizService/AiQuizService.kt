@@ -248,15 +248,10 @@ class AiQuizService(
     ```
     """.trimIndent()
 
-        // Giả sử systemMessageForTestGeneration đã được định nghĩa, ví dụ:
-        // val systemMessageForTestGeneration = Message("system", "You are an AI assistant that generates educational content.")
         val messages = listOf(systemMessageForTestGeneration, Message("user", prompt))
         val model = if (isCustom) "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free" else "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
-        // Giả định ChatRequest của bạn có cấu trúc (model, messages)
         val request = ChatRequest(model, messages = messages)
 
-        // Giả định retrofitClient.chatWithAI trả về Response<ChatResponse> từ Retrofit
-        // và ChatResponse có cấu trúc như đã mô tả ở trên.
         val response = retrofitClient.chatWithAI(request).awaitResponse()
 
         if (!response.isSuccessful) {

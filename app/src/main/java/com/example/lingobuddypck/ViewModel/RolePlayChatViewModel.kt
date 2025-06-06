@@ -43,7 +43,7 @@ class RolePlayChatViewModel(
         val userMessage = Message("user", userInput)
         fullHistory.add(userMessage)
         _chatMessages.value = fullHistory.filter { it != systemMessage }
-        isWaitingForResponse.value=true
+        isWaitingForResponse.value = true
 
         val recentHistory = getRecentHistory()
         val request = ChatRequest(
@@ -55,11 +55,14 @@ class RolePlayChatViewModel(
             override fun onResponse(call: Call<ChatResponse>, response: Response<ChatResponse>) {
                 isLoading.postValue(false)
                 val aiResponse = response.body()?.output?.choices?.getOrNull(0)?.text
-                val output = aiResponse?.replace(Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL), "")
+                val output = aiResponse?.replace(
+                    Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL),
+                    ""
+                )
                 if (!aiResponse.isNullOrEmpty()) {
                     val assistantMessage = Message("assistant", output)
                     fullHistory.add(assistantMessage)
-                    isWaitingForResponse.value=false
+                    isWaitingForResponse.value = false
                     _chatMessages.postValue(fullHistory.filter { it != systemMessage })
                 }
             }
@@ -89,7 +92,7 @@ class RolePlayChatViewModel(
         Hãy khuyến khích tôi tiếp tục bằng cách đặt câu hỏi phù hợp hoặc bổ sung thêm ngữ cảnh.
 
         LƯU Ý QUAN TRỌNG TRONG PHẦN NHẬP VAI NÀY:  
-        Nếu tiếng Anh của tôi có bất kỳ lỗi nào (từ vựng, ngữ pháp, ngữ điệu), hãy thêm một phần [Sửa Lỗi] ở cuối tin nhắn của bạn, viết bằng tiếng Việt.
+        Nếu tiếng Anh của tôi có bất kỳ lỗi nào (từ vựng, ngữ pháp, ngữ điệu), hãy thêm một phần [Sửa Lỗi] ở cuối tin nhắn của bạn để giúp tôi sửa TẤT CẢ các lỗi, viết bằng tiếng Việt.
         Theo hướng dẫn chung, TOÀN BỘ nội dung tiếng Anh bạn sử dụng trong phản hồi PHẢI được bọc trong cặp thẻ `<en>` và `</en>`.  
         Ví dụ: 'Bạn nói <en>You will have to order food from restaurant nearby</en> là sai. Bạn nên nói <en>You will have to order food from a nearby restaurant</en>.'
 

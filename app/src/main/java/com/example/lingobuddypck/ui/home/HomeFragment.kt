@@ -6,6 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -19,6 +21,7 @@ import com.example.lingobuddypck.ui.RolePlayActivity
 import com.example.lingobuddypck.ui.TestActivity
 import com.example.lingobuddypck.adapter.FeatureAdapter
 import com.example.lingobuddypck.data.Feature
+import com.example.lingobuddypck.data.Task
 
 class HomeFragment : Fragment() {
 
@@ -37,6 +40,12 @@ class HomeFragment : Fragment() {
         buttonStartTest=view.findViewById(R.id.buttonTest)
         val recyclerView: RecyclerView = view.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        val taskLayout = view.findViewById<LinearLayout>(R.id.dailyTaskLayout)
+        val taskButton = view.findViewById<Button>(R.id.buttonDailyTask)
+
+        taskButton.setOnClickListener {
+            taskLayout.visibility = if (taskLayout.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        }
 
         val featureList = listOf(
             Feature("Chat với AI Gia Sư", R.drawable.chat_ai),
@@ -69,6 +78,32 @@ class HomeFragment : Fragment() {
             }
         }
 
+        addDailyTasks(
+            listOf(
+                Task("🧠 Ôn từ vựng hôm nay") {  },
+                Task("📖 Làm bài tập ngữ pháp") {  },
+                Task("🎧 Nghe hội thoại mẫu") {  }
+            )
+        )
+
         recyclerView.adapter = adapter
+    }
+
+    private fun addDailyTasks(tasks: List<Task>) {
+        val container = view?.findViewById<LinearLayout>(R.id.dailyTaskLayout) ?: return
+        container.removeAllViews()
+
+        val inflater = LayoutInflater.from(requireContext())
+
+        for (task in tasks) {
+            val itemView = inflater.inflate(R.layout.item_daily_task, container, false)
+            val textView = itemView.findViewById<TextView>(R.id.textTaskName)
+            val button = itemView.findViewById<Button>(R.id.buttonGo)
+
+            textView.text = task.name
+            button.setOnClickListener { task.action() }
+
+            container.addView(itemView)
+        }
     }
 }

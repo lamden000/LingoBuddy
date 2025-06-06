@@ -79,29 +79,36 @@ class RolePlayChatViewModel(
         } else {
             fullHistory
         }
-        return recent.filter { it != systemMessage &&  it != welcome}+listOf(systemMessage)
+        return listOf(systemMessage)+recent.filter { it != systemMessage &&  it != welcome}
     }
 
     private fun buildSystemPrompt(aiRole: String, userRole: String, context: String): String {
         return """
-        Bạn đang đóng vai "$aiRole" trong bối cảnh "$context".  
-        tôi đang đóng vai "$userRole".
+        You are role-playing as "$aiRole" in the context of "$context".  
+        I am playing the role of "$userRole".
 
-        Hãy phản hồi một cách tự nhiên, bằng tiếng Anh trôi chảy, như thể bạn là một người thật đang nhập vai "$aiRole".
+        Respond entirely in natural, fluent English, as if you were a real person in character.
 
-        Hãy khuyến khích tôi tiếp tục bằng cách đặt câu hỏi phù hợp hoặc bổ sung thêm ngữ cảnh.
+        Encourage me to continue the conversation by asking follow-up questions or adding more relevant context.
 
-        LƯU Ý QUAN TRỌNG TRONG PHẦN NHẬP VAI NÀY:  
-        Nếu tiếng Anh của tôi có bất kỳ lỗi nào (từ vựng, ngữ pháp, ngữ điệu), hãy thêm một phần [Sửa Lỗi] ở cuối tin nhắn của bạn để giúp tôi sửa TẤT CẢ các lỗi, viết bằng tiếng Việt.
-        Theo hướng dẫn chung, TOÀN BỘ nội dung tiếng Anh bạn sử dụng trong phản hồi PHẢI được bọc trong cặp thẻ `<en>` và `</en>`.  
-        Ví dụ: 'Bạn nói <en>You will have to order food from restaurant nearby</en> là sai. Bạn nên nói <en>You will have to order food from a nearby restaurant</en>.'
+        IMPORTANT:
+        - If my English contains any mistakes (grammar, vocabulary, word choice, tone...), include a [Corrections] section at the end of your message.
+        - The [Corrections] section must be written in Vietnamese.
+        - In that section, do the following:
+          + Point out the errors in my English.
+          + Provide the corrected English version.
+          + Briefly explain the correction in Vietnamese.
 
-        Định dạng phản hồi của bạn nên là:
-        <en><Phần tiếng Anh của bạn ở đây></en>
+        Notes:
+        - All English in your own response must be wrapped with `<en>` and `</en>` tags so I can choose the right speaking accent.
+        - Example: 'Bạn nói <en>You will have to order food from restaurant nearby</en> là sai. Bạn nên nói <en>You will have to order food from a nearby restaurant</en>.'
+
+        Your response format should be:
+        <en>[Your English response goes here]</en>
 
         [Sửa Lỗi]  
-        <Phần sửa lỗi cho đoạn chat của tôi bằng tiếng Việt và phiên bản tiếng Anh đã chỉnh sửa nếu cần. Bạn phải đưa ra phản hồi ngay cả với những lỗi nhỏ>
-          Ví dụ: 'Bạn nói <en>You will have to order food from restaurant nearby</en> là sai. Bạn nên nói <en>You will have to order food from a nearby restaurant</en>.'
+        [Your corrections written in Vietnamese, even if the mistakes are minor.]
+        For each sentence, make sure every English word or phrase is properly wrapped in <en> and </en> tags. If you forget, it will be considered a mistake.
     """.trimIndent()
     }
 }

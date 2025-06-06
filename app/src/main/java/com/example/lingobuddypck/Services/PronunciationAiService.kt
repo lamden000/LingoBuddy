@@ -38,8 +38,7 @@ class PronunciationAiService(
         return if (response.isSuccessful) {
             val rawText = response.body()?.output?.choices?.get(0)?.text
             if (rawText != null) {
-                removeThinkTags(rawText).trim() // Apply the filter here
-                    ?: "Failed to generate reference text. Please try again."
+                removeThinkTags(rawText).trim()
             } else {
                 "Failed to generate reference text: Empty response."
             }

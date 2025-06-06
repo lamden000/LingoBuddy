@@ -52,6 +52,15 @@ private fun checkLanguageAndShowDialog(
     selectedText: String,
     onSave: (note: String) -> Unit
 ) {
+    if (selectedText.length > 30) {
+        AlertDialog.Builder(context)
+            .setTitle("Không thể lưu")
+            .setMessage("Văn bản đã chọn quá dài. Giới hạn là 30 ký tự.")
+            .setPositiveButton("OK", null)
+            .show()
+        return
+    }
+
     val languageIdentifier = LanguageIdentification.getClient()
     languageIdentifier.identifyLanguage(selectedText)
         .addOnSuccessListener { languageCode ->

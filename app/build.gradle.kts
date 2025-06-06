@@ -81,4 +81,5 @@ dependencies {
     implementation ("com.google.android.material:material:1.9.0")
     implementation ("com.google.mlkit:language-id:17.0.4")
     implementation ("com.google.mlkit:translate:17.0.1")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 }

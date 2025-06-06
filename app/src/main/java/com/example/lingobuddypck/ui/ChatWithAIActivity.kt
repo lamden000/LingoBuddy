@@ -23,9 +23,16 @@ import android.Manifest
 import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
 import android.util.Log
+import androidx.lifecycle.lifecycleScope
 import com.example.lingobuddypck.R
 import com.example.lingobuddypck.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.Services.Message
+import com.google.android.gms.tasks.Tasks
+import com.google.mlkit.nl.languageid.LanguageIdentification
+import com.google.mlkit.nl.languageid.LanguageIdentifier
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 
@@ -64,8 +71,10 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         recyclerView = findViewById(R.id.chatRecyclerView)
         micButton = findViewById(R.id.micButton)
 
-        adapter = ChatAdapter(ArrayList(),this,FirebaseWordRepository(), onSpeakClick = { text ->
-            speakMultiLanguageText(text)
+        adapter = ChatAdapter(ArrayList(), this, FirebaseWordRepository(), onSpeakClick = { text ->
+            lifecycleScope.launch {
+                speakMultiLanguageText(text)
+            }
         })
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
@@ -77,8 +86,10 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             currentActualMessages = messages
             val lastMessageOriginal = messages.lastOrNull()
             if (usedSpeechToText && lastMessageOriginal != null && lastMessageOriginal.role == "assistant" && lastMessageOriginal.content != null) {
-                speakMultiLanguageText(lastMessageOriginal.content)
-                usedSpeechToText = false
+                lifecycleScope.launch {
+                    speakMultiLanguageText(lastMessageOriginal.content)
+                    usedSpeechToText = false
+                }
             }
 
             adapter.setMessages(messages)
@@ -163,10 +174,14 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
 
-    private fun parseTextWithLanguageTags(inputText: String): List<TextSegment> {
+    suspend fun parseTextWithLanguageTags(
+        inputText: String,
+        languageIdentifier: LanguageIdentifier
+    ): List<TextSegment> {
         val segments = mutableListOf<TextSegment>()
         var currentIndex = 0
         val regex = Regex("<en>(.*?)</en>", RegexOption.DOT_MATCHES_ALL)
+        val bracketRegex = Regex("\\[(.*?)]")
 
         regex.findAll(inputText).forEach { matchResult ->
             val matchRange = matchResult.range
@@ -177,21 +192,65 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
             val englishText = matchResult.groups[1]?.value ?: ""
-            segments.add(TextSegment(englishText, "en"))
+            var lastPos = 0
+
+            bracketRegex.findAll(englishText).forEach { bracketMatch ->
+                val bracketRange = bracketMatch.range
+
+                // Add text before the bracket as English
+                val beforeBracket = englishText.substring(lastPos, bracketRange.first)
+                if (beforeBracket.isNotBlank()) {
+                    segments.add(TextSegment(beforeBracket, "en"))
+                }
+
+                val insideText = bracketMatch.groups[1]?.value ?: ""
+
+                // Await language detection safely
+                val langCode = withContext(Dispatchers.IO) {
+                    Tasks.await(languageIdentifier.identifyLanguage(insideText))
+                }
+
+                if (langCode == "vi") {
+                    segments.add(TextSegment(insideText, "vi"))
+                } else {
+                    segments.add(TextSegment("[$insideText]", "en"))
+                }
+
+                lastPos = bracketRange.last + 1
+            }
+
+            // Add remaining text after last bracket
+            if (lastPos < englishText.length) {
+                val remaining = englishText.substring(lastPos)
+                if (remaining.isNotBlank()) {
+                    segments.add(TextSegment(remaining, "en"))
+                }
+            }
 
             currentIndex = matchRange.last + 1
         }
 
+        // Add remaining Vietnamese text at the end
         if (currentIndex < inputText.length) {
             val remainingText = inputText.substring(currentIndex)
             segments.add(TextSegment(remainingText, "vi"))
         }
 
-        return segments.filter { it.text.isNotBlank() }
+        return segments
+            .map { TextSegment(cleanLeadingPunctuation(it.text), it.langCode) }
+            .filter { it.text.isNotBlank() }
     }
 
 
-    private fun speakMultiLanguageText(fullText: String?) {
+    suspend fun identifyLanguageSuspending(text: String): String {
+        val languageIdentifier = LanguageIdentification.getClient()
+        val langTask = languageIdentifier.identifyLanguage(text)
+        return withContext(Dispatchers.IO) {
+            Tasks.await(langTask)
+        }
+    }
+
+    private suspend fun speakMultiLanguageText(fullText: String?) {
         if (fullText.isNullOrBlank()) {
             Log.d("TTS", "Full text is null or blank, nothing to speak.")
             return
@@ -202,7 +261,8 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             return
         }
 
-        val segments = parseTextWithLanguageTags(fullText)
+        val languageIdentifier = LanguageIdentification.getClient()
+        val segments = parseTextWithLanguageTags(fullText,languageIdentifier)
         if (segments.isEmpty() && fullText.isNotBlank()) {
             Log.d("TTS", "No <en> tags found in '$fullText'. Speaking raw text with current/default voice.")
             if (textToSpeech.voice == null && (textToSpeech.language.language != "vi" && textToSpeech.language.language != "vie")) {
@@ -295,8 +355,6 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         }
     }
-
-
 
     private fun cleanLeadingPunctuation(text: String): String {
         if (text.isBlank()) {

@@ -6,6 +6,7 @@ import android.graphics.drawable.AnimatedVectorDrawable
 import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.style.StyleSpan
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -103,18 +104,16 @@ class ChatAdapter(
         }
     }
 
+
     fun formatTextWithHighlightedEnglish(input: String?): SpannableStringBuilder? {
         if (input == null) return null
 
         val spannable = SpannableStringBuilder()
         var currentIndex = 0
-        val regex = Regex("<en>(.*?)</en>") // Non-greedy match
+        val regex = Regex("<en>(.*?)</en>",RegexOption.DOT_MATCHES_ALL)
 
         regex.findAll(input).forEach { matchResult ->
             val start = matchResult.range.first
-            // val end = matchResult.range.last + 1 // Không dùng trực tiếp nữa
-
-            // Thêm phần trước đoạn <en>
             if (start > currentIndex) {
                 spannable.append(input.substring(currentIndex, start))
             }
@@ -156,6 +155,7 @@ class ChatAdapter(
         // private val avatarImage: ImageView = itemView.findViewById(R.id.avatarAI) // Avatar được xử lý trong layout item_message_other
 
         fun bind(message: Message) {
+            message.content?.let { Log.d("DEBUGCHAT", it) }
             val displayText = formatTextWithHighlightedEnglish(message.content)
             textMessage.text = displayText ?: message.content // Fallback nếu format lỗi
 

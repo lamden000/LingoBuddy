@@ -182,47 +182,40 @@ class RolePlayChatFragment : Fragment(), TextToSpeech.OnInitListener {
         if (status == TextToSpeech.SUCCESS) {
             isTtsInitialized = true
             Log.d("TTS", "TextToSpeech initialized successfully.")
+
             try {
                 val voices = textToSpeech.voices
                 for (voice in voices) {
-                    val lang = voice.locale.language
-                    val name = voice.name.toLowerCase(Locale.ROOT)
-
-                    if ((lang == "vi" || lang == "vie")) {
-                        if (name.contains("female") || name.contains("nữ")) {
-                            if (vietnameseVoice == null || (!voice.isNetworkConnectionRequired && vietnameseVoice!!.isNetworkConnectionRequired)) {
-                                vietnameseVoice = voice
-                            }
-                        } else if (vietnameseVoice == null && (!voice.isNetworkConnectionRequired)) { // Lấy tạm giọng nam/khác nếu chưa có giọng nữ
-                            vietnameseVoice = voice
-                        }
-                    } else if (lang == "en") {
-                        if (name.contains("female") || name.contains("nữ")) {
-                            if (englishVoice == null || (!voice.isNetworkConnectionRequired && englishVoice!!.isNetworkConnectionRequired)) {
-                                englishVoice = voice
-                            }
-                        } else if (englishVoice == null && (!voice.isNetworkConnectionRequired)) {
-                            englishVoice = voice
-                        }
+                    when (voice.locale.language) {
+                        "vi", "vie" -> if (vietnameseVoice == null || !voice.isNetworkConnectionRequired) vietnameseVoice = voice
+                        "en" -> if (englishVoice == null || !voice.isNetworkConnectionRequired) englishVoice = voice
                     }
                 }
-                // Log giọng đã chọn hoặc fallback
-                if (vietnameseVoice != null) Log.i("TTS", "Final Vietnamese voice: ${vietnameseVoice!!.name}")
-                else { Log.w("TTS", "No specific Vietnamese voice. Setting Locale VI."); textToSpeech.language = Locale("vi", "VN") }
 
-                if (englishVoice != null) Log.i("TTS", "Final English voice: ${englishVoice!!.name}")
-                else { Log.w("TTS", "No specific English voice. Setting Locale EN."); textToSpeech.language = Locale.ENGLISH }
+                if (vietnameseVoice == null) {
+                    Log.w("TTS", "Không tìm thấy giọng Việt, fallback Locale VI")
+                    textToSpeech.language = Locale("vi", "VN")
+                } else {
+                    Log.i("TTS", "Giọng Việt: ${vietnameseVoice!!.name}")
+                }
+
+                if (englishVoice == null) {
+                    Log.w("TTS", "Không tìm thấy giọng Anh, fallback Locale EN")
+                    textToSpeech.language = Locale.ENGLISH
+                } else {
+                    Log.i("TTS", "Giọng Anh: ${englishVoice!!.name}")
+                }
 
             } catch (e: Exception) {
-                Log.e("TTS", "Error getting or setting voices: ${e.message}", e)
+                Log.e("TTS", "Lỗi khi lấy hoặc set giọng: ${e.message}", e)
             }
+
         } else {
             isTtsInitialized = false
             Log.e("TTS", "TTS Initialization Failed! Status: $status")
             Toast.makeText(requireContext(), "Không thể khởi tạo TextToSpeech.", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     private fun parseTextWithLanguageTags(inputText: String): List<TextSegment> {
         val segments = mutableListOf<TextSegment>()
@@ -310,7 +303,6 @@ class RolePlayChatFragment : Fragment(), TextToSpeech.OnInitListener {
         }
     }
 
-    // --- Các hàm còn lại của Fragment (sendMessage, checkAudioPermission, etc.) ---
     private fun sendMessage() {
         val message = inputMessage.text.toString().trim()
         if (message.isNotEmpty()) {

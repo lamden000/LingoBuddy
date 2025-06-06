@@ -19,7 +19,7 @@ class RolePlayChatViewModel(
 ) : ViewModel() {
 
     private val maxHistorySize = 5
-    private lateinit var  welcome:Message
+    private var welcome:Message = Message("system", "Chúng ta sẽ bắt đầu vai trò: Tôi: $aiRole - Bạn: $userRole - Bối cảnh: $context. Bạn sẵn sàng chưa?")
 
     private val _chatMessages = MutableLiveData<List<Message>>()
     val chatMessages: LiveData<List<Message>> = _chatMessages
@@ -34,7 +34,6 @@ class RolePlayChatViewModel(
     private val fullHistory = mutableListOf(systemMessage)
 
     init {
-        welcome = Message("system", "Chúng ta sẽ bắt đầu vai trò: Tôi: $aiRole - Bạn: $userRole - Bối cảnh: $context. Bạn sẵn sàng chưa?")
         fullHistory.add(welcome)
         _chatMessages.value = fullHistory.filter { it != systemMessage}
         isWaitingForResponse.value=false
@@ -49,7 +48,7 @@ class RolePlayChatViewModel(
         val recentHistory = getRecentHistory()
         val request = ChatRequest(
             model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-            messages = recentHistory
+            messages = recentHistory,
         )
 
         RetrofitClient.instance.chatWithAI(request).enqueue(object : Callback<ChatResponse> {
@@ -77,21 +76,20 @@ class RolePlayChatViewModel(
         } else {
             fullHistory
         }
-        return listOf(systemMessage) + recent.filter { it != systemMessage &&  it != welcome}
+        return recent.filter { it != systemMessage &&  it != welcome}+listOf(systemMessage)
     }
 
     private fun buildSystemPrompt(aiRole: String, userRole: String, context: String): String {
         return """
         Bạn đang đóng vai "$aiRole" trong bối cảnh "$context".  
-        Người dùng đang đóng vai "$userRole".
+        tôi đang đóng vai "$userRole".
 
         Hãy phản hồi một cách tự nhiên, bằng tiếng Anh trôi chảy, như thể bạn là một người thật đang nhập vai "$aiRole".
 
-        Hãy khuyến khích người dùng tiếp tục bằng cách đặt câu hỏi phù hợp hoặc bổ sung thêm ngữ cảnh.
-
-        Nếu tiếng Anh của người dùng có bất kỳ lỗi nào (từ vựng, ngữ pháp, ngữ điệu), hãy thêm một phần [CORRECTIONS] ở cuối tin nhắn của bạn, viết bằng tiếng Việt.
+        Hãy khuyến khích tôi tiếp tục bằng cách đặt câu hỏi phù hợp hoặc bổ sung thêm ngữ cảnh.
 
         LƯU Ý QUAN TRỌNG TRONG PHẦN NHẬP VAI NÀY:  
+        Nếu tiếng Anh của tôi có bất kỳ lỗi nào (từ vựng, ngữ pháp, ngữ điệu), hãy thêm một phần [Sửa Lỗi] ở cuối tin nhắn của bạn, viết bằng tiếng Việt.
         Theo hướng dẫn chung, TOÀN BỘ nội dung tiếng Anh bạn sử dụng trong phản hồi PHẢI được bọc trong cặp thẻ `<en>` và `</en>`.  
         Ví dụ: 'Bạn nói <en>You will have to order food from restaurant nearby</en> là sai. Bạn nên nói <en>You will have to order food from a nearby restaurant</en>.'
 
@@ -99,9 +97,8 @@ class RolePlayChatViewModel(
         <en><Phần tiếng Anh của bạn ở đây></en>
 
         [Sửa Lỗi]  
-        <Phần sửa lỗi cho người dùng bằng tiếng Việt và phiên bản tiếng Anh đã chỉnh sửa nếu cần. Bạn phải đưa ra phản hồi ngay cả với những lỗi nhỏ>
+        <Phần sửa lỗi cho đoạn chat của tôi bằng tiếng Việt và phiên bản tiếng Anh đã chỉnh sửa nếu cần. Bạn phải đưa ra phản hồi ngay cả với những lỗi nhỏ>
+          Ví dụ: 'Bạn nói <en>You will have to order food from restaurant nearby</en> là sai. Bạn nên nói <en>You will have to order food from a nearby restaurant</en>.'
     """.trimIndent()
     }
-
-
 }

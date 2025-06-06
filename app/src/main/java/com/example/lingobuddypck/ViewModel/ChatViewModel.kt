@@ -19,7 +19,7 @@ import retrofit2.Response
 
 class ChatViewModel : ViewModel() {
 
-    private val maxHistorySize = 9
+    private val maxHistorySize = 8
     private val _chatMessages = MutableLiveData<List<Message>>()
     val chatMessages: LiveData<List<Message>> = _chatMessages
     val isLoading = MutableLiveData<Boolean>(false)
@@ -30,11 +30,10 @@ class ChatViewModel : ViewModel() {
 
     private val systemMessageContentBase = (
             "Bạn là một trợ lý ảo giúp người học cải thiện khả năng nói tiếng Anh. Tên của bạn là Lingo. " +
-                    "QUAN TRỌNG: Nếu người dùng gửi tin nhắn hoàn toàn bằng tiếng Anh, bạn phải phản hồi hoàn toàn bằng tiếng Anh và bọc TOÀN BỘ phản hồi trong cặp thẻ <en>...</en>. " +
+                    "QUAN TRỌNG: Nếu người dùng gửi tin nhắn hoàn toàn bằng tiếng Anh thì bạn PHẢI phản hồi hoàn toàn bằng tiếng Anh và bọc TOÀN BỘ phản hồi trong cặp thẻ <en>...</en>. " +
                     "Ví dụ: <en>Let's talk about your dogs! What are their names?</en> " +
-                    "Nếu người dùng nói bằng tiếng Việt hoặc trộn lẫn hai ngôn ngữ, bạn có thể dùng tiếng Việt để giải thích, nhưng phải bọc toàn bộ các phần tiếng Anh riêng biệt trong thẻ <en>...</en>. " +
-                    "Ví dụ: 'Bạn có thể nói: <en>I have two dogs</en> hoặc <en>They are very friendly</en>.' " +
-                    "Không bao giờ trộn tiếng Việt và tiếng Anh trong cùng một câu nếu không cần thiết. Không được bỏ sót thẻ <en> nếu có tiếng Anh."
+                    "Nếu người dùng nói bằng tiếng Việt, bạn có thể dùng tiếng Việt để giải thích, nhưng phải bọc toàn bộ các phần tiếng Anh riêng biệt trong thẻ <en>...</en>. " +
+                    "Ví dụ: 'Để giới thiệu về bản thân bạn có thể nói: <en>I'm [your name],it's nice to meet you</en>' "
             )
     private var currentSystemMessageContent: String = systemMessageContentBase
 
@@ -129,7 +128,7 @@ class ChatViewModel : ViewModel() {
 
     private fun setupInitialMessages() {
         fullHistory.clear()
-        val assistantWelcomeMessage = Message("assistant", "Xin chào! Tôi là Lingo. Chúng ta cùng bắt đầu buổi học tiếng Anh nhé?")
+        val assistantWelcomeMessage = Message("assistant",  "Xin chào! Tôi là Lingo. Chúng ta cùng bắt đầu buổi học tiếng Anh nhé?")
         fullHistory.add(assistantWelcomeMessage)
         _chatMessages.value = fullHistory.toList()
     }
@@ -147,7 +146,8 @@ class ChatViewModel : ViewModel() {
 
         val request = ChatRequest(
             model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-            messages = historyForAI
+            messages = historyForAI,
+            temperature = 0.5
         )
 
         RetrofitClient.instance.chatWithAI(request).enqueue(object : Callback<ChatResponse> {
@@ -186,6 +186,6 @@ class ChatViewModel : ViewModel() {
         }
         // Luôn tạo mới Message object cho system để đảm bảo nội dung là mới nhất
         val systemMsg = Message("system", currentSystemMessageContent)
-        return listOf(systemMsg) + conversationTurns
+        return conversationTurns+listOf(systemMsg)
     }
 }

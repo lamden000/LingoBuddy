@@ -44,9 +44,13 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private val RECORD_AUDIO_PERMISSION_CODE = 123
     private lateinit var textToSpeech: TextToSpeech
     private var usedSpeechToText = false
+    private var lastUsedLocaleForTTS: Locale? = null
+    private var lastUsedVoiceForTTS: Voice? = null
 
     private var isTtsInitialized: Boolean = false
     private var currentActualMessages: List<Message> = listOf()
+    private var englishVoice: Voice? = null
+    private var vietnameseVoice: Voice? = null
 
     data class TextSegment(val text: String, val langCode: String)
 
@@ -137,17 +141,24 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             isTtsInitialized = true
-            Log.d("TTS", "TextToSpeech initialized successfully.")
-            try {
-                val availableLanguages = textToSpeech.availableLanguages
-                Log.i("TTS", "Available languages: $availableLanguages")
-            } catch (e: Exception) {
-                Log.e("TTS", "Error listing languages: ${e.message}", e)
+
+            val allVoices = textToSpeech.voices
+            for (voice in allVoices) {
+                val lang = voice.locale.language
+                val name = voice.name.lowercase()
+
+                when {
+                    lang == "en" && englishVoice == null && !voice.isNetworkConnectionRequired -> {
+                        englishVoice = voice
+                    }
+                    (lang == "vi" || lang == "vie") && vietnameseVoice == null && !voice.isNetworkConnectionRequired -> {
+                        vietnameseVoice = voice
+                    }
+                }
             }
-        } else {
-            isTtsInitialized = false
-            Log.e("TTS", "TTS Initialization Failed! Status: $status")
-            Toast.makeText(this, "Không thể khởi tạo TextToSpeech.", Toast.LENGTH_SHORT).show()
+
+            Log.d("TTS", "Giọng Anh: ${englishVoice?.name}")
+            Log.d("TTS", "Giọng Việt: ${vietnameseVoice?.name}")
         }
     }
 
@@ -155,59 +166,146 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun parseTextWithLanguageTags(inputText: String): List<TextSegment> {
         val segments = mutableListOf<TextSegment>()
         var currentIndex = 0
-        val startTag = "<en>"
-        val endTag = "</en>"
-        while (currentIndex < inputText.length) {
-            val enTagStartIndex = inputText.indexOf(startTag, currentIndex)
-            if (enTagStartIndex == -1) {
-                if (currentIndex < inputText.length) segments.add(TextSegment(inputText.substring(currentIndex).trim(), "vi"))
-                break
+        val regex = Regex("<en>(.*?)</en>", RegexOption.DOT_MATCHES_ALL)
+
+        regex.findAll(inputText).forEach { matchResult ->
+            val matchRange = matchResult.range
+
+            if (currentIndex < matchRange.first) {
+                val vietnamesePart = inputText.substring(currentIndex, matchRange.first)
+                segments.add(TextSegment(vietnamesePart, "vi"))
             }
-            if (enTagStartIndex > currentIndex) segments.add(TextSegment(inputText.substring(currentIndex, enTagStartIndex).trim(), "vi"))
-            val enTagEndIndex = inputText.indexOf(endTag, enTagStartIndex + startTag.length)
-            if (enTagEndIndex == -1) {
-                Log.w("Parser", "Malformed <en> tag at index $enTagStartIndex.")
-                if (enTagStartIndex < inputText.length) segments.add(TextSegment(inputText.substring(enTagStartIndex).trim(), "vi"))
-                break
-            }
-            val englishText = inputText.substring(enTagStartIndex + startTag.length, enTagEndIndex).trim()
+
+            val englishText = matchResult.groups[1]?.value ?: ""
             segments.add(TextSegment(englishText, "en"))
-            currentIndex = enTagEndIndex + endTag.length
+
+            currentIndex = matchRange.last + 1
         }
+
+        if (currentIndex < inputText.length) {
+            val remainingText = inputText.substring(currentIndex)
+            segments.add(TextSegment(remainingText, "vi"))
+        }
+
         return segments.filter { it.text.isNotBlank() }
     }
 
+
     private fun speakMultiLanguageText(fullText: String?) {
-        if (fullText.isNullOrBlank()) return
+        if (fullText.isNullOrBlank()) {
+            Log.d("TTS", "Full text is null or blank, nothing to speak.")
+            return
+        }
         if (!isTtsInitialized) {
             Toast.makeText(this, "TTS chưa sẵn sàng.", Toast.LENGTH_SHORT).show()
+            Log.e("TTS", "TTS not initialized when trying to speak.")
             return
         }
 
         val segments = parseTextWithLanguageTags(fullText)
+        if (segments.isEmpty() && fullText.isNotBlank()) {
+            Log.d("TTS", "No <en> tags found in '$fullText'. Speaking raw text with current/default voice.")
+            if (textToSpeech.voice == null && (textToSpeech.language.language != "vi" && textToSpeech.language.language != "vie")) {
+                val fallbackLocale = Locale("vi", "VN")
+                if (textToSpeech.isLanguageAvailable(fallbackLocale) >= TextToSpeech.LANG_AVAILABLE) {
+                    textToSpeech.language = fallbackLocale
+                }
+            }
+            textToSpeech.speak(fullText, TextToSpeech.QUEUE_FLUSH, null, "fallback_${System.currentTimeMillis()}")
+            return
+        }
         if (segments.isEmpty()) {
-            textToSpeech.speak(fullText, TextToSpeech.QUEUE_ADD, null, "fallback_${System.currentTimeMillis()}")
+            Log.d("TTS", "No segments to speak after parsing.")
             return
         }
 
         textToSpeech.stop()
+
         var utteranceIdCounter = 0
+
         for (segment in segments) {
-            val uniqueUtteranceId = "utt_${System.currentTimeMillis()}_${utteranceIdCounter++}"
-            val locale = when (segment.langCode.lowercase()) {
-                "en" -> Locale.ENGLISH
-                "vi", "vie" -> Locale("vi", "VN")
-                else -> Locale.getDefault()
+            val cleanedText = cleanLeadingPunctuation(segment.text)
+            if (cleanedText.isBlank()) continue
+
+            val langCode = segment.langCode.lowercase()
+            val utteranceId = "utt_${System.currentTimeMillis()}_${utteranceIdCounter++}"
+
+            var targetVoiceForSegment: Voice? = null
+            val targetLocaleForSegment: Locale
+
+            when (langCode) {
+                "en" -> {
+                    targetVoiceForSegment = englishVoice
+                    targetLocaleForSegment = Locale.ENGLISH
+                }
+                "vi", "vie" -> {
+                    targetVoiceForSegment = vietnameseVoice // Giọng tiếng Việt đã chọn trong onInit
+                    targetLocaleForSegment = Locale("vi", "VN")
+                }
+                else -> {
+                    Log.w("TTS", "Unknown langCode '$langCode' for segment: '${cleanedText}'. Using system default locale.")
+                    targetLocaleForSegment = Locale.getDefault() // Hoặc bỏ qua segment này
+                }
             }
 
-            if (textToSpeech.isLanguageAvailable(locale) >= TextToSpeech.LANG_AVAILABLE) {
-                textToSpeech.language = locale
+            var voiceOrLangSetThisTurn = false
+
+            // Ưu tiên sử dụng setVoice nếu có giọng đọc cụ thể
+            if (targetVoiceForSegment != null) {
+                // Chỉ set voice nếu nó khác với voice đã dùng lần trước (tối ưu hóa)
+                if (lastUsedVoiceForTTS?.name != targetVoiceForSegment.name) {
+                    val setResult = textToSpeech.setVoice(targetVoiceForSegment)
+                    if (setResult == TextToSpeech.SUCCESS) {
+                        lastUsedVoiceForTTS = targetVoiceForSegment
+                        lastUsedLocaleForTTS = targetVoiceForSegment.locale // Cập nhật locale theo voice
+                        voiceOrLangSetThisTurn = true
+                        Log.d("TTS", "Voice set to: ${targetVoiceForSegment.name} for '${cleanedText}'")
+                    } else {
+                        Log.w("TTS", "Failed to set voice ${targetVoiceForSegment.name}. Will try setting language locale.")
+                        lastUsedVoiceForTTS = null // Voice không set được
+                    }
+                } else {
+                    voiceOrLangSetThisTurn = true // Voice giống lần trước, không cần set lại nhưng coi như đã set
+                }
             }
 
-            textToSpeech.speak(segment.text, TextToSpeech.QUEUE_ADD, null, uniqueUtteranceId)
+            // Nếu không set được voice cụ thể, hoặc không có voice cụ thể, thì set language
+            if (!voiceOrLangSetThisTurn || targetVoiceForSegment == null) {
+                if (lastUsedLocaleForTTS != targetLocaleForSegment) {
+                    val langResult = textToSpeech.setLanguage(targetLocaleForSegment)
+                    if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "Language $targetLocaleForSegment not supported for: '$cleanedText'. Speech might use fallback.")
+                    } else {
+                        lastUsedLocaleForTTS = targetLocaleForSegment
+                        Log.d("TTS", "Language set to: $targetLocaleForSegment for '${cleanedText}'")
+                    }
+                    lastUsedVoiceForTTS = null // Vì chúng ta đang dựa vào setLanguage, không phải voice cụ thể
+                }
+            }
+
+            val result = textToSpeech.speak(
+                cleanedText,
+                TextToSpeech.QUEUE_ADD,
+                null, // Bundle có thể là null nếu không dùng utterance listener
+                utteranceId
+            )
+
+            if (result == TextToSpeech.ERROR) {
+                Log.e("TTS", "Error speaking segment: '$cleanedText', langCode: $langCode")
+            }
         }
     }
 
+
+
+    private fun cleanLeadingPunctuation(text: String): String {
+        if (text.isBlank()) {
+            return ""
+        }
+        val regex = Regex("^[\\p{P}\\p{Z}]+")
+
+        return text.replace(regex, "")
+    }
 
     private fun sendMessage() {
         val message = inputMessage.text.toString().trim()

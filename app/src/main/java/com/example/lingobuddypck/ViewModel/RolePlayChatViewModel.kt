@@ -83,7 +83,7 @@ class RolePlayChatViewModel(
     }
 
     private fun buildSystemPrompt(aiRole: String, userRole: String, context: String): String {
-        return """
+        return "INSTRUCTION: "+"""
         You are role-playing as "$aiRole" in the context of "$context".  
         I am playing the role of "$userRole".
 
@@ -101,13 +101,13 @@ class RolePlayChatViewModel(
 
         Notes:
         - All English in your own response must be wrapped with `<en>` and `</en>` tags so I can choose the right speaking accent.
-        - Example: 'Bạn nói <en>You will have to order food from restaurant nearby</en> là sai. Bạn nên nói <en>You will have to order food from a nearby restaurant</en>.'
+        - Example: 'Câu bạn nói <en>You will have to order food from restaurant nearby</en> là sai vì thiếu mạo từ "a" và trật tự từ không đúng. Bạn nên nói <en>You will have to order food from a nearby restaurant</en>.'
 
         Your response format should be:
         <en>[Your English response goes here]</en>
 
         [Sửa Lỗi]  
-        [Your corrections written in Vietnamese, even if the mistakes are minor.]
+        [Your corrections for my English written in Vietnamese]
         For each sentence, make sure every English word or phrase is properly wrapped in <en> and </en> tags. If you forget, it will be considered a mistake.
     """.trimIndent()
     }

@@ -110,38 +110,39 @@ class ChatAdapter(
 
         val spannable = SpannableStringBuilder()
         var currentIndex = 0
-        val regex = Regex("<en>(.*?)</en>",RegexOption.DOT_MATCHES_ALL)
 
-        regex.findAll(input).forEach { matchResult ->
-            val start = matchResult.range.first
-            if (start > currentIndex) {
-                spannable.append(input.substring(currentIndex, start))
+        while (currentIndex < input.length) {
+            val startTag = input.indexOf("<en>", currentIndex)
+            val endTag = input.indexOf("</en>", startTag + 4)
+
+            if (startTag == -1 || endTag == -1) {
+                spannable.append(input.substring(currentIndex))
+                break
             }
 
-            val englishText = matchResult.groupValues[1] // Chỉ lấy nội dung bên trong tag
+            if (startTag > currentIndex) {
+                spannable.append(input.substring(currentIndex, startTag))
+            }
 
-            // Ghi nhớ vị trí bắt đầu đoạn tiếng Anh để tô màu/đậm
+            val englishText = input.substring(startTag + 4, endTag)
+
             val spanStart = spannable.length
-            spannable.append(englishText) // Nối đoạn tiếng Anh (đã bỏ tag)
+            spannable.append(englishText)
             val spanEnd = spannable.length
 
-            // Tô đậm hoặc đổi màu đoạn tiếng Anh
             spannable.setSpan(
-                StyleSpan(Typeface.BOLD), // Ví dụ: tô đậm
+                StyleSpan(Typeface.BOLD),
                 spanStart,
                 spanEnd,
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             )
-            currentIndex = matchResult.range.last + 1 // Cập nhật currentIndex sau </en>
+
+            currentIndex = endTag + 5
         }
 
-        // Thêm phần còn lại của chuỗi sau thẻ <en> cuối cùng (nếu có)
-        if (currentIndex < input.length) {
-            spannable.append(input.substring(currentIndex))
-        }
-        // Nếu không tìm thấy tag nào, trả về chuỗi gốc
-        return if (spannable.isEmpty() && currentIndex == 0) SpannableStringBuilder(input) else spannable
+        return spannable
     }
+
 
     inner class AIMessageViewHolder(
         itemView: View,
@@ -191,8 +192,6 @@ class ChatAdapter(
         }
 
         fun bind() {
-            // AVD với repeatCount="infinite" thường tự chạy khi visible.
-            // Gọi start() để đảm bảo.
             avd?.start()
         }
 

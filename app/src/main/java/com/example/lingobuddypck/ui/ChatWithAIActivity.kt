@@ -179,25 +179,34 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         languageIdentifier: LanguageIdentifier
     ): List<TextSegment> {
         val segments = mutableListOf<TextSegment>()
-        var currentIndex = 0
-        val regex = Regex("<en>(.*?)</en>", RegexOption.DOT_MATCHES_ALL)
         val bracketRegex = Regex("\\[(.*?)]")
+        var currentIndex = 0
 
-        regex.findAll(inputText).forEach { matchResult ->
-            val matchRange = matchResult.range
+        while (currentIndex < inputText.length) {
+            val startTag = inputText.indexOf("<en>", currentIndex)
+            val endTag = inputText.indexOf("</en>", startTag + 4)
 
-            if (currentIndex < matchRange.first) {
-                val vietnamesePart = inputText.substring(currentIndex, matchRange.first)
+            if (startTag == -1 || endTag == -1) {
+                // Không còn tag <en> nào → phần còn lại là tiếng Việt
+                val remainingText = inputText.substring(currentIndex)
+                if (remainingText.isNotBlank()) {
+                    segments.add(TextSegment(remainingText, "vi"))
+                }
+                break
+            }
+
+            // Đoạn tiếng Việt trước <en>
+            if (startTag > currentIndex) {
+                val vietnamesePart = inputText.substring(currentIndex, startTag)
                 segments.add(TextSegment(vietnamesePart, "vi"))
             }
 
-            val englishText = matchResult.groups[1]?.value ?: ""
+            // Xử lý nội dung trong <en>...</en>
+            val englishText = inputText.substring(startTag + 4, endTag)
             var lastPos = 0
 
             bracketRegex.findAll(englishText).forEach { bracketMatch ->
                 val bracketRange = bracketMatch.range
-
-                // Add text before the bracket as English
                 val beforeBracket = englishText.substring(lastPos, bracketRange.first)
                 if (beforeBracket.isNotBlank()) {
                     segments.add(TextSegment(beforeBracket, "en"))
@@ -205,7 +214,6 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                 val insideText = bracketMatch.groups[1]?.value ?: ""
 
-                // Await language detection safely
                 val langCode = withContext(Dispatchers.IO) {
                     Tasks.await(languageIdentifier.identifyLanguage(insideText))
                 }
@@ -219,7 +227,7 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 lastPos = bracketRange.last + 1
             }
 
-            // Add remaining text after last bracket
+            // Thêm phần còn lại sau dấu ] cuối cùng trong đoạn <en>
             if (lastPos < englishText.length) {
                 val remaining = englishText.substring(lastPos)
                 if (remaining.isNotBlank()) {
@@ -227,13 +235,7 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 }
             }
 
-            currentIndex = matchRange.last + 1
-        }
-
-        // Add remaining Vietnamese text at the end
-        if (currentIndex < inputText.length) {
-            val remainingText = inputText.substring(currentIndex)
-            segments.add(TextSegment(remainingText, "vi"))
+            currentIndex = endTag + 5 // cập nhật sau </en>
         }
 
         return segments
@@ -241,14 +243,6 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             .filter { it.text.isNotBlank() }
     }
 
-
-    suspend fun identifyLanguageSuspending(text: String): String {
-        val languageIdentifier = LanguageIdentification.getClient()
-        val langTask = languageIdentifier.identifyLanguage(text)
-        return withContext(Dispatchers.IO) {
-            Tasks.await(langTask)
-        }
-    }
 
     private suspend fun speakMultiLanguageText(fullText: String?) {
         if (fullText.isNullOrBlank()) {

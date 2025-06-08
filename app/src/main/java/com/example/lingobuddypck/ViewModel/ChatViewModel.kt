@@ -28,12 +28,13 @@ class ChatViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    private val systemMessageContentBase = (
-            "Bạn là một trợ lý ảo giúp người học cải thiện khả năng nói tiếng Anh. Tên của bạn là Lingo. " +
-                    "QUAN TRỌNG: Nếu người dùng gửi tin nhắn hoàn toàn bằng tiếng Anh thì bạn PHẢI phản hồi hoàn toàn bằng tiếng Anh và bọc TOÀN BỘ phản hồi trong cặp thẻ <en>...</en>. " +
-                    "Ví dụ: <en>Let's talk about your dogs! What are their names?</en> " +
-                    "Nếu người dùng nói bằng tiếng Việt, bạn có thể dùng tiếng Việt để giải thích, nhưng phải bọc toàn bộ các phần tiếng Anh riêng biệt trong thẻ <en>...</en>. " +
-                    "Ví dụ: 'Để giới thiệu về bản thân bạn có thể nói: <en>I'm [your name],it's nice to meet you</en>' "
+    private val systemMessageContentBase = ("INSTRUCTION:"+
+            "You are a virtual assistant who helps learners improve their spoken English. Your name is Lingo. " +
+                    "If the user speaks in Vietnamese, you may use Vietnamese to explain, but you must still wrap all English parts separately in <en>...</en> tags. " +
+                    "Example: 'Để giới thiệu về bản thân bạn có thể nói: <en>I'm [your name], it's nice to meet you</en>'"+
+                    "For each sentence, make sure every English word or phrase is properly wrapped in <en> and </en> tags. If you forget, it will be considered a mistake."+
+                    "IMPORTANT: If the user sends a message entirely in English, you MUST respond entirely in English and wrap the ENTIRE response in <en>...</en> tags " +
+                    "Example: <en>Let's have a conversation in English. I'd be happy to help you practice English</en> "
             )
     private var currentSystemMessageContent: String = systemMessageContentBase
 
@@ -106,20 +107,20 @@ class ChatViewModel : ViewModel() {
         // Thêm thông tin cá nhân của người dùng (nếu có)
         fetchedUserPersonalDetails?.let { details ->
             val userInfoParts = mutableListOf<String>()
-            if (!details.name.isNullOrBlank()) userInfoParts.add("- Tên người dùng: ${details.name}")
-            if (!details.job.isNullOrBlank()) userInfoParts.add("- Công việc: ${details.job}")
-            if (!details.interest.isNullOrBlank()) userInfoParts.add("- Sở thích: ${details.interest}")
-            if (!details.otherInfo.isNullOrBlank()) userInfoParts.add("- Thông tin thêm: ${details.otherInfo}")
+            if (!details.name.isNullOrBlank()) userInfoParts.add("- the user's name: ${details.name}")
+            if (!details.job.isNullOrBlank()) userInfoParts.add("- Job: ${details.job}")
+            if (!details.interest.isNullOrBlank()) userInfoParts.add("- Interest: ${details.interest}")
+            if (!details.otherInfo.isNullOrBlank()) userInfoParts.add("- Additional info: ${details.otherInfo}")
 
             if (userInfoParts.isNotEmpty()) {
-                newSystemContent += "\n\nThông tin về người học:\n" + userInfoParts.joinToString("\n")
+                newSystemContent += "\n\nthe user's info:\n" + userInfoParts.joinToString("\n")
             }
         }
 
         if (currentAiTone.isNotBlank()) {
-            newSystemContent += "\n\nHãy cố gắng trò chuyện với phong cách sau: $currentAiTone."
+            newSystemContent += "\n\nTry to keep the conversation in this style: $currentAiTone."
         } else {
-            newSystemContent += "\n\nHãy cố gắng trò chuyện với phong cách: trung lập và thân thiện."
+            newSystemContent += "\n\nTry to keep the conversation in this style: trung lập và thân thiện."
         }
 
         currentSystemMessageContent = newSystemContent
@@ -186,6 +187,6 @@ class ChatViewModel : ViewModel() {
         }
         // Luôn tạo mới Message object cho system để đảm bảo nội dung là mới nhất
         val systemMsg = Message("system", currentSystemMessageContent)
-        return conversationTurns+listOf(systemMsg)
+        return listOf(systemMsg)+conversationTurns
     }
 }

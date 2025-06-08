@@ -22,5 +22,6 @@
         android:text="Đi tới"
         android:textAllCaps="false"
         android:backgroundTint="@color/teal_700"
-        android:textColor="@android:color/white" />
+        android:textColor="@android:color/white"
+        android:enabled="true" />
 </LinearLayout>

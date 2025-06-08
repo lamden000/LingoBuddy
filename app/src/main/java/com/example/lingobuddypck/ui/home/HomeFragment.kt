@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,6 +23,8 @@ import com.example.lingobuddypck.ui.TestActivity
 import com.example.lingobuddypck.adapter.FeatureAdapter
 import com.example.lingobuddypck.data.Feature
 import com.example.lingobuddypck.data.Task
+import com.example.lingobuddypck.utils.TopicUtils
+import com.example.lingobuddypck.utils.TaskManager
 
 class HomeFragment : Fragment() {
 
@@ -42,6 +45,9 @@ class HomeFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         val taskLayout = view.findViewById<LinearLayout>(R.id.dailyTaskLayout)
         val taskButton = view.findViewById<Button>(R.id.buttonDailyTask)
+
+        // Initialize TaskManager with default tasks
+        TaskManager.initializeDefaultTasks()
 
         taskButton.setOnClickListener {
             taskLayout.visibility = if (taskLayout.visibility == View.VISIBLE) View.GONE else View.VISIBLE
@@ -78,32 +84,61 @@ class HomeFragment : Fragment() {
             }
         }
 
-        addDailyTasks(
-            listOf(
-                Task("🧠 Ôn từ vựng hôm nay") {  },
-                Task("📖 Làm bài tập ngữ pháp") {  },
-                Task("🎧 Nghe hội thoại mẫu") {  }
-            )
-        )
+        setupDailyTasks()
 
         recyclerView.adapter = adapter
     }
 
-    private fun addDailyTasks(tasks: List<Task>) {
+    private fun setupDailyTasks() {
         val container = view?.findViewById<LinearLayout>(R.id.dailyTaskLayout) ?: return
         container.removeAllViews()
 
         val inflater = LayoutInflater.from(requireContext())
+        
+        // Get daily tasks from TaskManager
+        val dailyTasks = TaskManager.getDailyTasks(requireContext()).map { task ->
+            // Create a new task with the same name but with our specific action
+            Task(task.name) {
+                when {
+                    task.name.contains("luyện phát âm",true) -> startPronunciationActivity()
+                    task.name.contains("hình ảnh",true) -> {/* Add vocabulary activity start */}
+                    task.name.contains("ngữ pháp",true) -> {/* Add grammar activity start */}
+                    task.name.contains("hội thoại",true) -> {/* Add conversation activity start */}
+                }
+            }
+        }
 
-        for (task in tasks) {
+        for (task in dailyTasks) {
             val itemView = inflater.inflate(R.layout.item_daily_task, container, false)
             val textView = itemView.findViewById<TextView>(R.id.textTaskName)
             val button = itemView.findViewById<Button>(R.id.buttonGo)
 
-            textView.text = task.name
-            button.setOnClickListener { task.action() }
+            // Check if task is completed
+            val taskType = when {
+                task.name.contains("đạt trên 8 điểm") -> TaskManager.TaskType.PRONUNCIATION_SCORE
+                task.name.contains("chủ đề") -> TaskManager.TaskType.PRONUNCIATION_TOPIC
+                else -> null
+            }
 
+            if (taskType != null && TaskManager.isTaskCompleted(requireContext(), taskType)) {
+                textView.text = "✅ ${task.name}"
+                button.isEnabled = false
+                // Set button color to gray when completed
+                button.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray))
+                button.text = "Đã hoàn thành"
+            } else {
+                textView.text = task.name
+            }
+
+            button.setOnClickListener { task.action() }
             container.addView(itemView)
         }
+    }
+
+    private fun startPronunciationActivity() {
+        val intent = Intent(requireContext(), PronunciationActivity::class.java).apply {
+            putExtra("topic", TaskManager.getDailyTopic(requireContext()))
+        }
+        startActivity(intent)
     }
 }

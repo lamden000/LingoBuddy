@@ -30,6 +30,8 @@ import com.example.lingobuddypck.ViewModel.PronunciationViewModel
 import com.example.lingobuddypck.utils.TopicUtils
 import com.google.android.material.textfield.TextInputEditText
 import com.google.gson.Gson
+import com.example.lingobuddypck.utils.TaskManager
+
 class PronunciationActivity : AppCompatActivity() {
 
     private lateinit var speechRecognizer: SpeechRecognizer
@@ -62,8 +64,14 @@ class PronunciationActivity : AppCompatActivity() {
         txtStatus = findViewById(R.id.txtStatus)
         progressBar = findViewById(R.id.progressBar)
 
-        checkAudioPermission()
+        // Get topic from intent if available
+        intent.getStringExtra("topic")?.let { topic ->
+            etTopicInput.setText(topic)
+            // Automatically generate reference text for the topic
+            viewModel.generateNewReferenceText(topic, true)
+        }
 
+        checkAudioPermission()
         setupListeners()
         setupObservers()
 
@@ -78,13 +86,11 @@ class PronunciationActivity : AppCompatActivity() {
 
         btnGenerateReference.setOnClickListener {
             btnGenerateReference.isEnabled = false
-            if( !etTopicInput.text.isNullOrEmpty()) {
+            if (!etTopicInput.text.isNullOrEmpty()) {
                 val topic = etTopicInput.text.toString().trim()
-                viewModel.generateNewReferenceText(topic,true)
-            }
-            else
-            {
-                viewModel.generateNewReferenceText(TopicUtils.getRandomTopicFromAssets(this),false)
+                viewModel.generateNewReferenceText(topic, true)
+            } else {
+                viewModel.generateNewReferenceText(TopicUtils.getRandomTopicFromAssets(this), false)
             }
         }
     }
@@ -236,11 +242,23 @@ class PronunciationActivity : AppCompatActivity() {
         val mistakesText = if (feedback.mistakes.isNotEmpty()) feedback.mistakes.joinToString(", ") else "Không có lỗi"
         val suggestionsText = if (feedback.suggestions.isNotEmpty()) feedback.suggestions.joinToString("\n") else "Không có gợi ý sửa lỗi."
 
+        // Check for task completion
+        if (feedback.score >= 8) {
+            TaskManager.markTaskCompleted(this, TaskManager.TaskType.PRONUNCIATION_SCORE)
+        }
+
+        val currentTopic = TaskManager.getDailyTopic(this)
+        if (tvReference.text.toString().contains(currentTopic, ignoreCase = true)) {
+            TaskManager.markTaskCompleted(this, TaskManager.TaskType.PRONUNCIATION_TOPIC)
+        }
+
         val feedbackMessage = """
             Điểm phát âm: ${feedback.score}/10
             Lỗi: $mistakesText
             Gợi ý sửa:
             $suggestionsText
+            
+            ${getTaskCompletionMessage()}
         """.trimIndent()
 
         AlertDialog.Builder(this)
@@ -251,6 +269,22 @@ class PronunciationActivity : AppCompatActivity() {
                 viewModel.clearPronunciationFeedback()
             }
             .show()
+    }
+
+    private fun getTaskCompletionMessage(): String {
+        val scoreTaskCompleted = TaskManager.isTaskCompleted(this, TaskManager.TaskType.PRONUNCIATION_SCORE)
+        val topicTaskCompleted = TaskManager.isTaskCompleted(this, TaskManager.TaskType.PRONUNCIATION_TOPIC)
+        
+        val messages = mutableListOf<String>()
+        
+        if (scoreTaskCompleted) {
+            messages.add("✅ Đã hoàn thành nhiệm vụ đạt trên 8 điểm")
+        }
+        if (topicTaskCompleted) {
+            messages.add("✅ Đã hoàn thành nhiệm vụ luyện phát âm chủ đề hôm nay")
+        }
+        
+        return if (messages.isEmpty()) "" else "\n\nNhiệm vụ đã hoàn thành:\n${messages.joinToString("\n")}"
     }
 
     override fun onDestroy() {

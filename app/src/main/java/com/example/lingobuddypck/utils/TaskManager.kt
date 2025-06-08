@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import java.time.LocalDate
 import com.example.lingobuddypck.data.Task
+import android.widget.Toast
 
 object TaskManager {
     private const val PREF_NAME = "daily_tasks"
@@ -25,7 +26,9 @@ object TaskManager {
         PRONUNCIATION_TOPIC,
         VOCABULARY,
         GRAMMAR,
-        LISTENING
+        LISTENING,
+        IMAGE_QUIZ_SCORE,
+        IMAGE_SEND_TWO
         // Add more task types as needed
     }
 
@@ -42,11 +45,32 @@ object TaskManager {
     }
 
     fun initializeDefaultTasks() {
+
+        // Image Quiz Score Task
+        registerTask(
+            TaskType.IMAGE_QUIZ_SCORE,
+            DailyTask(TaskType.IMAGE_QUIZ_SCORE) { context ->
+                Task("📸 Hoàn thành một bài quiz với hình ảnh và đạt trên 8 điểm") {
+                    // Action will be set by the Fragment/Activity
+                }
+            }
+        )
+
+        // Image Send Two Task
+        registerTask(
+            TaskType.IMAGE_SEND_TWO,
+            DailyTask(TaskType.IMAGE_SEND_TWO) { context ->
+                Task("🖼️ Gửi 2 hình ảnh cho AI") {
+                    // Action will be set by the Fragment/Activity
+                }
+            }
+        )
+
         // Pronunciation Score Task
         registerTask(
             TaskType.PRONUNCIATION_SCORE,
             DailyTask(TaskType.PRONUNCIATION_SCORE) { context ->
-                Task("Thực hiện một bài luyện phát âm và đạt trên 8 điểm") {
+                Task("🎯 Thực hiện một bài luyện phát âm và đạt trên 8 điểm") {
                     // Action will be set by the Fragment/Activity
                 }
             }
@@ -56,7 +80,7 @@ object TaskManager {
         registerTask(
             TaskType.PRONUNCIATION_TOPIC,
             DailyTask(TaskType.PRONUNCIATION_TOPIC) { context ->
-                Task("Luyện phát âm một câu thuộc chủ đề: ${getDailyTopic(context)}") {
+                Task("🗣️ Luyện phát âm một câu thuộc chủ đề: ${getDailyTopic(context)}") {
                     // Action will be set by the Fragment/Activity
                 }
             }
@@ -84,10 +108,36 @@ object TaskManager {
         return prefs.getBoolean(KEY_TASK_COMPLETED + today + "_" + taskType.name, false)
     }
 
+    fun isTaskInToday(context: Context, taskType: TaskType): Boolean {
+        val prefs = getPrefs(context)
+        val today = getTodayString()
+        val savedTaskTypes = prefs.getStringSet(KEY_DAILY_TASKS + today, null)
+        return savedTaskTypes?.contains(taskType.name) == true
+    }
+
     fun markTaskCompleted(context: Context, taskType: TaskType) {
         val prefs = getPrefs(context)
         val today = getTodayString()
-        prefs.edit().putBoolean(KEY_TASK_COMPLETED + today + "_" + taskType.name, true).apply()
+        
+        // Only mark and notify if it's in today's tasks and not already completed
+        if (isTaskInToday(context, taskType) && !isTaskCompleted(context, taskType)) {
+            prefs.edit().putBoolean(KEY_TASK_COMPLETED + today + "_" + taskType.name, true).apply()
+            
+            // Show completion notification
+            val taskName = when (taskType) {
+                TaskType.PRONUNCIATION_SCORE -> "Luyện phát âm đạt trên 8 điểm"
+                TaskType.PRONUNCIATION_TOPIC -> "Luyện phát âm theo chủ đề"
+                TaskType.IMAGE_QUIZ_SCORE -> "Quiz hình ảnh đạt trên 8 điểm"
+                TaskType.IMAGE_SEND_TWO -> "Gửi 2 hình ảnh cho AI"
+                else -> "Nhiệm vụ"
+            }
+            
+            Toast.makeText(
+                context,
+                "Bạn đã hoàn thành nhiệm vụ: $taskName",
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     fun getDailyTasks(context: Context, numberOfTasks: Int = 2): List<Task> {

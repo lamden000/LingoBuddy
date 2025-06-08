@@ -45,6 +45,7 @@ import com.example.lingobuddypck.Services.Message
 import com.example.lingobuddypck.adapter.ChatAdapter
 import com.example.lingobuddypck.data.ImageQuiz
 import com.example.lingobuddypck.data.ImageQuizQuestion
+import com.example.lingobuddypck.utils.TaskManager
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -88,6 +89,8 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var imagePreviewContainer: FrameLayout
     private lateinit var closeImageButton: ImageButton
 
+    private var imagesSentCount = 0
+
     // Launcher for picking image from gallery
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -125,6 +128,8 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_image_learning)
+
+        imagesSentCount = 0
 
         viewModel = ViewModelProvider(this)[ImageLearningViewModel::class.java]
         recyclerView = findViewById(R.id.recyclerView)
@@ -400,13 +405,40 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         // Show final score with percentage
         val percentage = (score.toFloat() / total * 100).toInt()
-        AlertDialog.Builder(this)
-            .setTitle("Kết quả")
-            .setMessage("Bạn đã trả lời đúng $score/$total câu! ($percentage%)")
-            .setPositiveButton("OK") { dialog, _ ->
-                dialog.dismiss()
+
+        // Check if score is above 80% and it's a daily task
+        if (percentage >= 80) {
+            if (TaskManager.isTaskInToday(this, TaskManager.TaskType.IMAGE_QUIZ_SCORE)) {
+                // Show a special dialog for task completion
+                AlertDialog.Builder(this)
+                    .setTitle("🎉 Chúc mừng!")
+                    .setMessage("Bạn đã hoàn thành xuất sắc bài quiz với điểm số $score/$total ($percentage%)!\n\nBạn đã hoàn thành nhiệm vụ hàng ngày!")
+                    .setPositiveButton("Tuyệt vời") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .show()
+            } else {
+                // Show regular score dialog
+                AlertDialog.Builder(this)
+                    .setTitle("Kết quả")
+                    .setMessage("Bạn đã trả lời đúng $score/$total câu! ($percentage%)")
+                    .setPositiveButton("OK") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .show()
             }
-            .show()
+            // Mark task as completed after showing dialog
+            TaskManager.markTaskCompleted(this, TaskManager.TaskType.IMAGE_QUIZ_SCORE)
+        } else {
+            // Show regular score dialog for non-passing scores
+            AlertDialog.Builder(this)
+                .setTitle("Kết quả")
+                .setMessage("Bạn đã trả lời đúng $score/$total câu! ($percentage%)")
+                .setPositiveButton("OK") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
+        }
 
         // Disable submit button after showing results
         submitQuizButton.isEnabled = false
@@ -490,11 +522,15 @@ class ImageLearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             return
         }
 
-        // Hide quiz if showing
+        if (selectedImageUri != null) {
+            imagesSentCount++
+            if (imagesSentCount >= 2 && TaskManager.isTaskInToday(this, TaskManager.TaskType.IMAGE_SEND_TWO)) {
+                TaskManager.markTaskCompleted(this, TaskManager.TaskType.IMAGE_SEND_TWO)
+            }
+        }
+
         hideQuiz()
-
         viewModel.sendImageAndMessage(this, message, selectedImageUri)
-
         inputMessage.text.clear()
         imagePreviewContainer.visibility = View.GONE
         clearImage()

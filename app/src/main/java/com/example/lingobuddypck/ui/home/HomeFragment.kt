@@ -48,6 +48,7 @@ class HomeFragment : Fragment() {
 
         // Initialize TaskManager with default tasks
         TaskManager.initializeDefaultTasks()
+        TaskManager.clearTasksForTesting(requireContext())
 
         taskButton.setOnClickListener {
             taskLayout.visibility = if (taskLayout.visibility == View.VISIBLE) View.GONE else View.VISIBLE
@@ -101,7 +102,7 @@ class HomeFragment : Fragment() {
             Task(task.name) {
                 when {
                     task.name.contains("luyện phát âm",true) -> startPronunciationActivity()
-                    task.name.contains("hình ảnh",true) -> {/* Add vocabulary activity start */}
+                    task.name.contains("hình ảnh",true) -> startImageLearningActivity()
                     task.name.contains("ngữ pháp",true) -> {/* Add grammar activity start */}
                     task.name.contains("hội thoại",true) -> {/* Add conversation activity start */}
                 }
@@ -115,8 +116,14 @@ class HomeFragment : Fragment() {
 
             // Check if task is completed
             val taskType = when {
-                task.name.contains("đạt trên 8 điểm") -> TaskManager.TaskType.PRONUNCIATION_SCORE
-                task.name.contains("chủ đề") -> TaskManager.TaskType.PRONUNCIATION_TOPIC
+                task.name.contains("đạt trên 8 điểm") && task.name.contains("phát âm") -> 
+                    TaskManager.TaskType.PRONUNCIATION_SCORE
+                task.name.contains("chủ đề") -> 
+                    TaskManager.TaskType.PRONUNCIATION_TOPIC
+                task.name.contains("quiz với hình ảnh") -> 
+                    TaskManager.TaskType.IMAGE_QUIZ_SCORE
+                task.name.contains("gửi 2 hình ảnh") -> 
+                    TaskManager.TaskType.IMAGE_SEND_TWO
                 else -> null
             }
 
@@ -139,6 +146,11 @@ class HomeFragment : Fragment() {
         val intent = Intent(requireContext(), PronunciationActivity::class.java).apply {
             putExtra("topic", TaskManager.getDailyTopic(requireContext()))
         }
+        startActivity(intent)
+    }
+
+    private fun startImageLearningActivity() {
+        val intent = Intent(requireContext(), ImageLearningActivity::class.java)
         startActivity(intent)
     }
 }

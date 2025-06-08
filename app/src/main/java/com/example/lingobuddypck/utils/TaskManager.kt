@@ -28,7 +28,11 @@ object TaskManager {
         GRAMMAR,
         LISTENING,
         IMAGE_QUIZ_SCORE,
-        IMAGE_SEND_TWO
+        IMAGE_SEND_TWO,
+        PASSAGE_QUIZ_SCORE,
+        PASSAGE_QUIZ_TOPIC,
+        ROLE_PLAY_TEN_MINUTES,
+        REVIEW_SCORE
         // Add more task types as needed
     }
 
@@ -45,6 +49,25 @@ object TaskManager {
     }
 
     fun initializeDefaultTasks() {
+        // Pronunciation Score Task
+        registerTask(
+            TaskType.PRONUNCIATION_SCORE,
+            DailyTask(TaskType.PRONUNCIATION_SCORE) { context ->
+                Task("🎯 Thực hiện một bài luyện phát âm và đạt trên 8 điểm") {
+                    // Action will be set by the Fragment/Activity
+                }
+            }
+        )
+
+        // Pronunciation Topic Task
+        registerTask(
+            TaskType.PRONUNCIATION_TOPIC,
+            DailyTask(TaskType.PRONUNCIATION_TOPIC) { context ->
+                Task("🗣️ Luyện phát âm một câu thuộc chủ đề: ${getDailyTopic(context)}") {
+                    // Action will be set by the Fragment/Activity
+                }
+            }
+        )
 
         // Image Quiz Score Task
         registerTask(
@@ -66,27 +89,45 @@ object TaskManager {
             }
         )
 
-        // Pronunciation Score Task
+        // Passage Quiz Score Task
         registerTask(
-            TaskType.PRONUNCIATION_SCORE,
-            DailyTask(TaskType.PRONUNCIATION_SCORE) { context ->
-                Task("🎯 Thực hiện một bài luyện phát âm và đạt trên 8 điểm") {
+            TaskType.PASSAGE_QUIZ_SCORE,
+            DailyTask(TaskType.PASSAGE_QUIZ_SCORE) { context ->
+                Task("📝 Hoàn thành một bài quiz đoạn văn và đạt trên 8 điểm") {
                     // Action will be set by the Fragment/Activity
                 }
             }
         )
 
-        // Pronunciation Topic Task
+        // Passage Quiz Topic Task
         registerTask(
-            TaskType.PRONUNCIATION_TOPIC,
-            DailyTask(TaskType.PRONUNCIATION_TOPIC) { context ->
-                Task("🗣️ Luyện phát âm một câu thuộc chủ đề: ${getDailyTopic(context)}") {
+            TaskType.PASSAGE_QUIZ_TOPIC,
+            DailyTask(TaskType.PASSAGE_QUIZ_TOPIC) { context ->
+                Task("📚 Làm bài quiz đoạn văn về chủ đề: ${getDailyTopic(context)}") {
                     // Action will be set by the Fragment/Activity
                 }
             }
         )
 
-        // Add more default tasks here
+        // Role Play Ten Minutes Task
+        registerTask(
+            TaskType.ROLE_PLAY_TEN_MINUTES,
+            DailyTask(TaskType.ROLE_PLAY_TEN_MINUTES) { context ->
+                Task("🎭 Nói chuyện 10 phút với AI") {
+                    // Action will be set by the Fragment/Activity
+                }
+            }
+        )
+
+        // Review Score Task
+        registerTask(
+            TaskType.REVIEW_SCORE,
+            DailyTask(TaskType.REVIEW_SCORE) { context ->
+                Task("📝 Ôn tập từ vựng đã lưu và đạt trên 8 điểm") {
+                    // Action will be set by the Fragment/Activity
+                }
+            }
+        )
     }
 
     fun getDailyTopic(context: Context): String {
@@ -129,6 +170,10 @@ object TaskManager {
                 TaskType.PRONUNCIATION_TOPIC -> "Luyện phát âm theo chủ đề"
                 TaskType.IMAGE_QUIZ_SCORE -> "Quiz hình ảnh đạt trên 8 điểm"
                 TaskType.IMAGE_SEND_TWO -> "Gửi 2 hình ảnh cho AI"
+                TaskType.PASSAGE_QUIZ_SCORE -> "Quiz đoạn văn đạt trên 8 điểm"
+                TaskType.PASSAGE_QUIZ_TOPIC -> "Quiz đoạn văn theo chủ đề"
+                TaskType.ROLE_PLAY_TEN_MINUTES -> "Nói chuyện 10 phút với AI"
+                TaskType.REVIEW_SCORE -> "Ôn tập từ vựng đạt trên 8 điểm"
                 else -> "Nhiệm vụ"
             }
             
@@ -140,7 +185,7 @@ object TaskManager {
         }
     }
 
-    fun getDailyTasks(context: Context, numberOfTasks: Int = 2): List<Task> {
+    fun getDailyTasks(context: Context, numberOfTasks: Int = 3): List<Task> {
         val prefs = getPrefs(context)
         val today = getTodayString()
 

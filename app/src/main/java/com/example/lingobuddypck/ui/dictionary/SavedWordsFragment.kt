@@ -23,6 +23,8 @@ import com.example.lingobuddypck.adapter.SavedWordListItem
 import com.example.lingobuddypck.adapter.SavedWordsAdapter
 import com.google.android.material.dialog.MaterialAlertDialogBuilder // Hoặc AlertDialog thông thường
 import com.google.gson.Gson
+import com.example.lingobuddypck.utils.TaskManager
+
 class SavedWordsFragment : Fragment() {
 
     private val wordRepository = FirebaseWordRepository()
@@ -95,7 +97,6 @@ class SavedWordsFragment : Fragment() {
     }
 
     private fun observeViewModel(recyclerView: RecyclerView, textViewNoWords: TextView) {
-
         viewModel.savedWords.observe(viewLifecycleOwner) { words ->
             if (words.isNullOrEmpty()) {
                 textViewNoWords.isVisible = true
@@ -119,6 +120,16 @@ class SavedWordsFragment : Fragment() {
         viewModel.operationResult.observe(viewLifecycleOwner) { event ->
             event.getContentIfNotHandled()?.let { message ->
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Observe quiz results for task completion
+        viewModel.gradingResult.observe(viewLifecycleOwner) { result ->
+            result?.let {
+                val score = (it.score.toDouble() / it.total_questions.toDouble()) * 10
+                if (score > 8 && TaskManager.isTaskInToday(requireContext(), TaskManager.TaskType.REVIEW_SCORE)) {
+                    TaskManager.markTaskCompleted(requireContext(), TaskManager.TaskType.REVIEW_SCORE)
+                }
             }
         }
     }

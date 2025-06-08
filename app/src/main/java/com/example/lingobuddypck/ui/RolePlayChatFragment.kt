@@ -5,6 +5,8 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
@@ -33,6 +35,7 @@ import com.example.lingobuddypck.Services.Message
 import com.example.lingobuddypck.ViewModel.RolePlayChatViewModel
 import com.example.lingobuddypck.adapter.ChatAdapter
 import com.example.lingobuddypck.data.ChatItemDecoration
+import com.example.lingobuddypck.utils.TaskManager
 import java.util.Locale
 
 
@@ -50,6 +53,20 @@ class RolePlayChatFragment : Fragment(), TextToSpeech.OnInitListener {
     private lateinit var speechRecognitionIntent: Intent
     private var usedSpeechToText = false
     private var currentActualMessages: List<Message> = listOf()
+    private var conversationStartTime: Long = 0
+    private var isTimerRunning = false
+    private val handler = Handler(Looper.getMainLooper())
+    private val timerRunnable = object : Runnable {
+        override fun run() {
+            val elapsedMinutes = (System.currentTimeMillis() - conversationStartTime) / 60000
+            if (elapsedMinutes >= 10 && TaskManager.isTaskInToday(requireContext(), TaskManager.TaskType.ROLE_PLAY_TEN_MINUTES)) {
+                TaskManager.markTaskCompleted(requireContext(), TaskManager.TaskType.ROLE_PLAY_TEN_MINUTES)
+                isTimerRunning = false
+            } else if (isTimerRunning) {
+                handler.postDelayed(this, 60000) // Check every minute
+            }
+        }
+    }
 
     // Biến cho TTS đa ngôn ngữ
     private var isTtsInitialized: Boolean = false
@@ -100,6 +117,11 @@ class RolePlayChatFragment : Fragment(), TextToSpeech.OnInitListener {
         val aiRole = arguments?.getString("AIRole") ?: "Teacher"
         val userRole = arguments?.getString("UserRole") ?: "Student"
         val contextText = arguments?.getString("context") ?: "English conversation practice"
+
+        // Start conversation timer
+        conversationStartTime = System.currentTimeMillis()
+        isTimerRunning = true
+        handler.postDelayed(timerRunnable, 60000) // First check after 1 minute
 
         val factory = RolePlayViewModelFactory(userRole, aiRole, contextText)
         viewModel = ViewModelProvider(this, factory)[RolePlayChatViewModel::class.java]
@@ -354,6 +376,11 @@ class RolePlayChatFragment : Fragment(), TextToSpeech.OnInitListener {
             textToSpeech.shutdown()
             Log.d("TTS", "TTS shutdown onDestroyView.")
         }
+        
+        // Stop the timer
+        isTimerRunning = false
+        handler.removeCallbacks(timerRunnable)
+        
         // _binding = null // Nếu bạn sử dụng ViewBinding, hãy thêm dòng này
     }
 }

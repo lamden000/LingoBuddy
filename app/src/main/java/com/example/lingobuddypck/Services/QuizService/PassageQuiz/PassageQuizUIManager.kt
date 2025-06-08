@@ -20,6 +20,7 @@ import com.example.lingobuddypck.R
 import com.example.lingobuddypck.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.data.DisplayableQuizContent
 import com.example.lingobuddypck.data.QuizDisplayType
+import com.example.lingobuddypck.utils.TaskManager
 import com.example.lingobuddypck.utils.TopicUtils
 import com.example.lingobuddypck.utils.enableSelectableSaveAction
 
@@ -44,7 +45,6 @@ class PassageQuizUIManager(
         originalButtonText = views.buttonStart.text.toString()
         setupClickListeners()
         setupObservers()
-        resetUIForStart()
     }
 
     private fun setupClickListeners() {
@@ -286,6 +286,7 @@ class PassageQuizUIManager(
             isShowingGradingResult = true
             val correct = result.score
             val total = result.total_questions
+            val percentage = (correct.toFloat() / total * 100).toInt()
 
             views.textViewResult.text = "Kết quả: $correct/$total câu đúng."
             views.textViewResult.isVisible = true
@@ -296,6 +297,16 @@ class PassageQuizUIManager(
             views.passageTextView.isVisible=true
 
             feedbackViews.values.forEach { it.isVisible = false }
+
+            if (percentage >= 80) {
+                TaskManager.markTaskCompleted(context, TaskManager.TaskType.PASSAGE_QUIZ_SCORE)
+            }
+
+            // Check for topic task completion
+            val currentTopic = views.customTopicEditTxt?.text?.toString()
+            if (currentTopic == TaskManager.getDailyTopic(context)) {
+                TaskManager.markTaskCompleted(context, TaskManager.TaskType.PASSAGE_QUIZ_TOPIC)
+            }
 
             result.feedback.forEach { (qid, fb) ->
                 val question = currentQuizContent?.questions?.find { it.id == qid }
@@ -371,14 +382,14 @@ class PassageQuizUIManager(
         views.textViewLoadingHint.isVisible = false
         views.textViewCountdown.isVisible = false
         views.aiAvatar.isVisible = false
-        views.passageTextView.alpha = 1f // Reset alpha
-        views.questionsContainer.alpha = 1f // Reset alpha
+        views.passageTextView.alpha = 1f
+        views.questionsContainer.alpha = 1f
         views.buttonStart.isVisible = true
-        views.buttonStart.isEnabled = true // Đảm bảo nút start có thể click
+        views.buttonStart.isEnabled = true
         views.initialStateContainer.isVisible = true
         views.recyclerView?.isVisible = true
         views.customTopicEditTxt?.isVisible = true
-        views.customTopicEditTxt?.text?.clear() // Xóa topic cũ
+        views.customTopicEditTxt?.text?.clear()
         onShowNavigationBar?.invoke()
         views.buttonStart.text = originalButtonText
     }

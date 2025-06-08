@@ -104,42 +104,61 @@ class ChatAdapter(
         }
     }
 
-
     fun formatTextWithHighlightedEnglish(input: String?): SpannableStringBuilder? {
         if (input == null) return null
 
         val spannable = SpannableStringBuilder()
         var currentIndex = 0
+        val tagOpen = "<en>"
+        val tagClose = "</en>"
+
+        val tagStack = mutableListOf<Int>() // Stores the start index in the spannable for each <en> tag
 
         while (currentIndex < input.length) {
-            val startTag = input.indexOf("<en>", currentIndex)
-            val endTag = input.indexOf("</en>", startTag + 4)
+            val nextOpenTag = input.indexOf(tagOpen, currentIndex)
+            val nextCloseTag = input.indexOf(tagClose, currentIndex)
 
-            if (startTag == -1 || endTag == -1) {
+            // Case 1: An opening tag appears next
+            if (nextOpenTag != -1 && (nextOpenTag < nextCloseTag || nextCloseTag == -1)) {
+                // Append the text before the opening tag
+                if (nextOpenTag > currentIndex) {
+                    spannable.append(input.substring(currentIndex, nextOpenTag))
+                }
+                // Push the current length of the spannable onto the stack,
+                // marking where the bolding for this tag should begin.
+                tagStack.add(spannable.length)
+                currentIndex = nextOpenTag + tagOpen.length
+            }
+            // Case 2: A closing tag appears next
+            else if (nextCloseTag != -1) {
+                // Append the text before the closing tag
+                if (nextCloseTag > currentIndex) {
+                    spannable.append(input.substring(currentIndex, nextCloseTag))
+                }
+                // If there's an opening tag on the stack, apply the bolding.
+                if (tagStack.isNotEmpty()) {
+                    val spanStart = tagStack.removeAt(tagStack.lastIndex) // Pop the start index
+                    val spanEnd = spannable.length
+                    if (spanStart < spanEnd) { // Ensure there's content to span
+                        spannable.setSpan(
+                            StyleSpan(Typeface.BOLD),
+                            spanStart,
+                            spanEnd,
+                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
+                }
+                currentIndex = nextCloseTag + tagClose.length
+            }
+            // Case 3: No more tags, append the rest of the string
+            else {
                 spannable.append(input.substring(currentIndex))
                 break
             }
-
-            if (startTag > currentIndex) {
-                spannable.append(input.substring(currentIndex, startTag))
-            }
-
-            val englishText = input.substring(startTag + 4, endTag)
-
-            val spanStart = spannable.length
-            spannable.append(englishText)
-            val spanEnd = spannable.length
-
-            spannable.setSpan(
-                StyleSpan(Typeface.BOLD),
-                spanStart,
-                spanEnd,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-
-            currentIndex = endTag + 5
         }
 
+        // After processing, if any tags remain unclosed (malformed input),
+        // their corresponding spans will not be applied.
         return spannable
     }
 

@@ -10,27 +10,27 @@ import com.example.lingobuddypck.R
 import com.example.lingobuddypck.Services.QuizService.PassageQuiz.PassageQuizViews
 import com.example.lingobuddypck.ViewModel.PassageQuizViewModelImpl
 import com.example.lingobuddypck.Repository.FirebaseWordRepository
-import com.google.gson.Gson // Your Gson instance
+import com.example.lingobuddypck.utils.TaskManager
+import com.google.gson.Gson
 
 class PassageQuizActivity : AppCompatActivity() {
 
-    // Use your new ViewModel implementation
     private val viewModel: PassageQuizViewModelImpl by viewModels {
         PassageQuizViewModelImpl.Factory(
-            AiQuizService(Gson(), RetrofitClient.instance) // Ensure RetrofitClient.togetherApi provides your TogetherApi instance
+            AiQuizService(Gson(), RetrofitClient.instance)
         )
     }
 
     private lateinit var uiManager: PassageQuizUIManager
+    private lateinit var views: PassageQuizViews
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_passage_quiz)
 
-        // Instantiate the PassageQuizViews data class with your layout elements
-        val views = PassageQuizViews(
+        views = PassageQuizViews(
             progressBar = findViewById(R.id.progressBar),
-            passageTextView = findViewById(R.id.passageTextView) ,
+            passageTextView = findViewById(R.id.passageTextView),
             questionsContainer = findViewById(R.id.questionsContainer),
             buttonSubmit = findViewById(R.id.buttonSubmit),
             buttonStart = findViewById(R.id.buttonStart),
@@ -39,24 +39,25 @@ class PassageQuizActivity : AppCompatActivity() {
             textViewLoadingHint = findViewById(R.id.textViewLoadingHint),
             textViewCountdown = findViewById(R.id.textViewCountdown),
             aiAvatar = findViewById(R.id.aiAvatar),
-            recyclerView = findViewById(R.id.recyclerView), // Optional, can be null
-            customTopicEditTxt = findViewById(R.id.customTopicEditTxt), // Optional, can be null
-            initialStateContainer = findViewById(R.id.initialStateContainer) // Important for managing start UI
+            recyclerView = findViewById(R.id.recyclerView),
+            customTopicEditTxt = findViewById(R.id.customTopicEditTxt),
+            initialStateContainer = findViewById(R.id.initialStateContainer)
         )
-
-        // Initialize FirebaseWordRepository - adjust this based on your actual DI or instantiation
+        intent.getStringExtra("topic")?.let { topic ->
+            views.customTopicEditTxt?.setText(topic)
+            // Automatically start quiz with this topic
+            views.buttonStart.performClick()
+        }
         val wordRepository = FirebaseWordRepository()
 
-        // Instantiate your new UIManager
         uiManager = PassageQuizUIManager(
             context = this,
             lifecycleOwner = this,
             viewModel = viewModel,
             wordRepository = wordRepository,
             views = views,
-            onShowNavigationBar = { /* Implement navigation bar show logic here if needed */ },
-            onHideNavigationBar = { /* Implement navigation bar hide logic here if needed */ }
+            onShowNavigationBar = { },
+            onHideNavigationBar = { }
         )
-
     }
 }

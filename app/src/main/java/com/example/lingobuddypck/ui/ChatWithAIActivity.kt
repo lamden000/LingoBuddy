@@ -178,67 +178,100 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         inputText: String,
         languageIdentifier: LanguageIdentifier
     ): List<TextSegment> {
-        val segments = mutableListOf<TextSegment>()
-        val bracketRegex = Regex("\\[(.*?)]")
+        // A contract must be precise. We first segment by the primary language tags.
+        val initialSegments = mutableListOf<TextSegment>()
+        val tagRegex = Regex("""</?en>""") // A regex to find all <en> or </en> tags.
+        val tags = tagRegex.findAll(inputText).toList()
+        val langStack = mutableListOf("vi") // The default language is assumed to be 'vi'.
         var currentIndex = 0
 
-        while (currentIndex < inputText.length) {
-            val startTag = inputText.indexOf("<en>", currentIndex)
-            val endTag = inputText.indexOf("</en>", startTag + 4)
-
-            if (startTag == -1 || endTag == -1) {
-                // Không còn tag <en> nào → phần còn lại là tiếng Việt
-                val remainingText = inputText.substring(currentIndex)
-                if (remainingText.isNotBlank()) {
-                    segments.add(TextSegment(remainingText, "vi"))
-                }
-                break
+        for (match in tags) {
+            // The text between the previous tag and the current one adheres to the prior context.
+            val textBefore = inputText.substring(currentIndex, match.range.first)
+            if (textBefore.isNotEmpty()) {
+                initialSegments.add(TextSegment(textBefore, langStack.last()))
             }
 
-            // Đoạn tiếng Việt trước <en>
-            if (startTag > currentIndex) {
-                val vietnamesePart = inputText.substring(currentIndex, startTag)
-                segments.add(TextSegment(vietnamesePart, "vi"))
+            // We adjust our context based on the nature of the tag.
+            if (match.value == "<en>") {
+                langStack.add("en")
+            } else if (match.value == "</en>") {
+                // A closing tag must correspond to an opening one.
+                if (langStack.lastOrNull() == "en") {
+                    langStack.removeAt(langStack.lastIndex)
+                }
+                // Malformed tags are simply weathered by time, and we proceed.
             }
-
-            // Xử lý nội dung trong <en>...</en>
-            val englishText = inputText.substring(startTag + 4, endTag)
-            var lastPos = 0
-
-            bracketRegex.findAll(englishText).forEach { bracketMatch ->
-                val bracketRange = bracketMatch.range
-                val beforeBracket = englishText.substring(lastPos, bracketRange.first)
-                if (beforeBracket.isNotBlank()) {
-                    segments.add(TextSegment(beforeBracket, "en"))
-                }
-
-                val insideText = bracketMatch.groups[1]?.value ?: ""
-
-                val langCode = withContext(Dispatchers.IO) {
-                    Tasks.await(languageIdentifier.identifyLanguage(insideText))
-                }
-
-                if (langCode == "vi") {
-                    segments.add(TextSegment(insideText, "vi"))
-                } else {
-                    segments.add(TextSegment("[$insideText]", "en"))
-                }
-
-                lastPos = bracketRange.last + 1
-            }
-
-            // Thêm phần còn lại sau dấu ] cuối cùng trong đoạn <en>
-            if (lastPos < englishText.length) {
-                val remaining = englishText.substring(lastPos)
-                if (remaining.isNotBlank()) {
-                    segments.add(TextSegment(remaining, "en"))
-                }
-            }
-
-            currentIndex = endTag + 5 // cập nhật sau </en>
+            currentIndex = match.range.last + 1
         }
 
-        return segments
+        // The remainder of the text after the final tag.
+        if (currentIndex < inputText.length) {
+            val remainingText = inputText.substring(currentIndex)
+            if (remainingText.isNotEmpty()) {
+                initialSegments.add(TextSegment(remainingText, langStack.last()))
+            }
+        }
+
+        // Now, with the foundation secure, we examine the finer details within each segment.
+        val processedSegments = mutableListOf<TextSegment>()
+        val bracketRegex = Regex("""\[(.*?)]""")
+
+        for (segment in initialSegments) {
+            if (segment.langCode == "en") {
+                // For English segments, we must inspect the bracketed content.
+                var lastPos = 0
+                val englishText = segment.text
+
+                bracketRegex.findAll(englishText).forEach { bracketMatch ->
+                    val bracketRange = bracketMatch.range
+                    val textBeforeBracket = englishText.substring(lastPos, bracketRange.first)
+                    if (textBeforeBracket.isNotBlank()) {
+                        processedSegments.add(TextSegment(textBeforeBracket, "en"))
+                    }
+
+                    val insideBracketText = bracketMatch.groups[1]?.value ?: ""
+                    val langCode = withContext(Dispatchers.IO) {
+                        // We fulfill the contract of language identification.
+                        Tasks.await(languageIdentifier.identifyLanguage(insideBracketText))
+                    }
+
+                    if (langCode == "vi") {
+                        processedSegments.add(TextSegment(insideBracketText, "vi"))
+                    } else {
+                        // If not Vietnamese, it remains within its bracketed, English context.
+                        processedSegments.add(TextSegment("[${insideBracketText}]", "en"))
+                    }
+                    lastPos = bracketRange.last + 1
+                }
+
+                // The remainder of the English segment, after the final bracket.
+                if (lastPos < englishText.length) {
+                    val remaining = englishText.substring(lastPos)
+                    if (remaining.isNotBlank()) {
+                        processedSegments.add(TextSegment(remaining, "en"))
+                    }
+                }
+            } else {
+                // Vietnamese segments require no such detailed inspection.
+                processedSegments.add(segment)
+            }
+        }
+
+        // Finally, we consolidate what is contiguous. Like dust settling into stone, adjacent segments of the same nature should be unified.
+        val mergedSegments = mutableListOf<TextSegment>()
+        for (segment in processedSegments) {
+            if (segment.text.isBlank()) continue
+
+            if (mergedSegments.isNotEmpty() && mergedSegments.last().langCode == segment.langCode) {
+                val lastSegment = mergedSegments.removeAt(mergedSegments.lastIndex)
+                mergedSegments.add(TextSegment(lastSegment.text + segment.text, lastSegment.langCode))
+            } else {
+                mergedSegments.add(segment)
+            }
+        }
+
+        return mergedSegments
             .map { TextSegment(cleanLeadingPunctuation(it.text), it.langCode) }
             .filter { it.text.isNotBlank() }
     }

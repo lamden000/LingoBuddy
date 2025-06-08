@@ -25,6 +25,8 @@ import com.example.lingobuddypck.data.Feature
 import com.example.lingobuddypck.data.Task
 import com.example.lingobuddypck.utils.TopicUtils
 import com.example.lingobuddypck.utils.TaskManager
+import com.example.lingobuddypck.ui.NavigationActivity
+import com.example.lingobuddypck.ui.dictionary.SavedWordsFragment
 
 class HomeFragment : Fragment() {
 
@@ -46,7 +48,6 @@ class HomeFragment : Fragment() {
         val taskLayout = view.findViewById<LinearLayout>(R.id.dailyTaskLayout)
         val taskButton = view.findViewById<Button>(R.id.buttonDailyTask)
 
-        // Initialize TaskManager with default tasks
         TaskManager.initializeDefaultTasks()
         TaskManager.clearTasksForTesting(requireContext())
 
@@ -103,8 +104,12 @@ class HomeFragment : Fragment() {
                 when {
                     task.name.contains("luyện phát âm",true) -> startPronunciationActivity()
                     task.name.contains("hình ảnh",true) -> startImageLearningActivity()
+                    task.name.contains("quiz với hình ảnh",true) -> startImageLearningActivity()
+                    task.name.contains("quiz đoạn văn",true) -> startPassageQuizActivity()
                     task.name.contains("ngữ pháp",true) -> {/* Add grammar activity start */}
                     task.name.contains("hội thoại",true) -> {/* Add conversation activity start */}
+                    task.name.contains("nói chuyện",true) -> startRolePlayActivity()
+                    task.name.contains("ôn tập",true) -> startDictionaryFragment()
                 }
             }
         }
@@ -118,12 +123,20 @@ class HomeFragment : Fragment() {
             val taskType = when {
                 task.name.contains("đạt trên 8 điểm") && task.name.contains("phát âm") -> 
                     TaskManager.TaskType.PRONUNCIATION_SCORE
-                task.name.contains("chủ đề") -> 
+                task.name.contains("chủ đề") && task.name.contains("phát âm") -> 
                     TaskManager.TaskType.PRONUNCIATION_TOPIC
                 task.name.contains("quiz với hình ảnh") -> 
                     TaskManager.TaskType.IMAGE_QUIZ_SCORE
                 task.name.contains("gửi 2 hình ảnh") -> 
                     TaskManager.TaskType.IMAGE_SEND_TWO
+                task.name.contains("quiz đoạn văn") && task.name.contains("đạt trên 8 điểm") ->
+                    TaskManager.TaskType.PASSAGE_QUIZ_SCORE
+                task.name.contains("quiz đoạn văn") && task.name.contains("chủ đề") ->
+                    TaskManager.TaskType.PASSAGE_QUIZ_TOPIC
+                task.name.contains("nói chuyện 10 phút") ->
+                    TaskManager.TaskType.ROLE_PLAY_TEN_MINUTES
+                task.name.contains("ôn tập") && task.name.contains("đạt trên 8 điểm") ->
+                    TaskManager.TaskType.REVIEW_SCORE
                 else -> null
             }
 
@@ -152,5 +165,27 @@ class HomeFragment : Fragment() {
     private fun startImageLearningActivity() {
         val intent = Intent(requireContext(), ImageLearningActivity::class.java)
         startActivity(intent)
+    }
+
+    private fun startPassageQuizActivity() {
+        val intent = Intent(requireContext(), PassageQuizActivity::class.java).apply {
+            // Pass the topic if the task is about a specific topic
+            if (TaskManager.isTaskInToday(requireContext(), TaskManager.TaskType.PASSAGE_QUIZ_TOPIC)) {
+                putExtra("topic", TaskManager.getDailyTopic(requireContext()))
+            }
+        }
+        startActivity(intent)
+    }
+
+    private fun startRolePlayActivity() {
+        val intent = Intent(requireContext(), RolePlayActivity::class.java)
+        startActivity(intent)
+    }
+
+    private fun startDictionaryFragment() {
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.nav_host_fragment, SavedWordsFragment())
+            .addToBackStack(null)
+            .commit()
     }
 }

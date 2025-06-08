@@ -248,8 +248,11 @@ class PronunciationActivity : AppCompatActivity() {
         }
 
         val currentTopic = TaskManager.getDailyTopic(this)
-        if (tvReference.text.toString().contains(currentTopic, ignoreCase = true)) {
+        if (etTopicInput.text.toString().contains(currentTopic, ignoreCase = true)) {
             TaskManager.markTaskCompleted(this, TaskManager.TaskType.PRONUNCIATION_TOPIC)
+        }
+        else{
+            Log.d("CustomTask","Today topic: $currentTopic Used topic: "+tvReference.text.toString())
         }
 
         val feedbackMessage = """
@@ -257,8 +260,6 @@ class PronunciationActivity : AppCompatActivity() {
             Lỗi: $mistakesText
             Gợi ý sửa:
             $suggestionsText
-            
-            ${getTaskCompletionMessage()}
         """.trimIndent()
 
         AlertDialog.Builder(this)

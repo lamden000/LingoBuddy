@@ -49,7 +49,6 @@ class HomeFragment : Fragment() {
         val taskButton = view.findViewById<Button>(R.id.buttonDailyTask)
 
         TaskManager.initializeDefaultTasks()
-        TaskManager.clearTasksForTesting(requireContext())
 
         taskButton.setOnClickListener {
             taskLayout.visibility = if (taskLayout.visibility == View.VISIBLE) View.GONE else View.VISIBLE
@@ -72,6 +71,7 @@ class HomeFragment : Fragment() {
         )
 
         buttonStartTest.setOnClickListener {
+            TaskManager.clearTasksForTesting(requireContext())
             val intent = Intent(requireActivity(), TestActivity::class.java)
             startActivity(intent)
         }
@@ -121,21 +121,21 @@ class HomeFragment : Fragment() {
 
             // Check if task is completed
             val taskType = when {
-                task.name.contains("đạt trên 8 điểm") && task.name.contains("phát âm") -> 
+                task.name.contains("đạt trên 8 điểm",true) && task.name.contains("phát âm") ->
                     TaskManager.TaskType.PRONUNCIATION_SCORE
-                task.name.contains("chủ đề") && task.name.contains("phát âm") -> 
+                task.name.contains("chủ đề",true) && task.name.contains("phát âm") ->
                     TaskManager.TaskType.PRONUNCIATION_TOPIC
-                task.name.contains("quiz với hình ảnh") -> 
+                task.name.contains("quiz với hình ảnh",true) ->
                     TaskManager.TaskType.IMAGE_QUIZ_SCORE
-                task.name.contains("gửi 2 hình ảnh") -> 
+                task.name.contains("gửi 2 hình ảnh",true) ->
                     TaskManager.TaskType.IMAGE_SEND_TWO
-                task.name.contains("quiz đoạn văn") && task.name.contains("đạt trên 8 điểm") ->
+                task.name.contains("quiz đoạn văn",true) && task.name.contains("đạt trên 8 điểm") ->
                     TaskManager.TaskType.PASSAGE_QUIZ_SCORE
-                task.name.contains("quiz đoạn văn") && task.name.contains("chủ đề") ->
+                task.name.contains("quiz đoạn văn",true) && task.name.contains("chủ đề") ->
                     TaskManager.TaskType.PASSAGE_QUIZ_TOPIC
-                task.name.contains("nói chuyện 10 phút") ->
+                task.name.contains("nói chuyện 10 phút",true) ->
                     TaskManager.TaskType.ROLE_PLAY_TEN_MINUTES
-                task.name.contains("ôn tập") && task.name.contains("đạt trên 8 điểm") ->
+                task.name.contains("ôn tập",true) && task.name.contains("đạt trên 8 điểm") ->
                     TaskManager.TaskType.REVIEW_SCORE
                 else -> null
             }
@@ -153,6 +153,11 @@ class HomeFragment : Fragment() {
             button.setOnClickListener { task.action() }
             container.addView(itemView)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setupDailyTasks()
     }
 
     private fun startPronunciationActivity() {

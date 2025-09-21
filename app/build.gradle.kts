@@ -1,15 +1,29 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
     id("com.google.gms.google-services")
     id("androidx.navigation.safeargs.kotlin")
     id("kotlin-parcelize")
+
+}
+
+val localProps = Properties()
+val localPropsFile = rootProject.file("local.properties")
+if (localPropsFile.exists()) {
+    FileInputStream(localPropsFile).use { stream ->
+        localProps.load(stream)
+    }
 }
 
 android {
     namespace = "com.example.lingobuddypck"
     compileSdk = 34
-
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId = "com.example.lingobuddypck"
         minSdk = 28
@@ -21,8 +35,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        buildConfigField("String", "OPENAI_API_KEY", "\"${localProps.getProperty("OPENAI_API_KEY", "")}\"")
+        buildConfigField("String", "TOGETHERAI_API_KEY", "\"${localProps.getProperty("TOGETHERAI_API_KEY", "")}\"")
     }
-
     buildTypes {
         release {
             isMinifyEnabled = false

@@ -92,8 +92,8 @@ class RolePlayChatViewModel(
         Encourage me to continue the conversation by asking follow-up questions or adding more relevant context.
 
         IMPORTANT:
-        - If my English contains any mistakes (grammar, vocabulary, word choice, tone...), include a [Corrections] section at the end of your message.
-        - The [Corrections] section must be written in Vietnamese.
+        - If my English contains any mistakes (grammar, vocabulary, word choice, tone...), include a [Sửa Lỗi] section at the end of your message.
+        - The [Sửa Lỗi] section must be written in Vietnamese.
         - In that section, do the following:
           + Point out the errors in my English.
           + Provide the corrected English version.
@@ -101,7 +101,7 @@ class RolePlayChatViewModel(
 
         Notes:
         - All English in your own response must be wrapped with `<en>` and `</en>` tags so I can choose the right speaking accent.
-        - Example: 'Câu bạn nói <en>You will have to order food from restaurant nearby</en> là sai vì thiếu mạo từ "a" và trật tự từ không đúng. Bạn nên nói <en>You will have to order food from a nearby restaurant</en>.'
+        - Example: 'Câu bạn nói <en>You will have to order food from restaurant nearby</en> là sai vì [explanation in Vietnamese]. Bạn nên nói <en>You will have to order food from a nearby restaurant</en>.'
 
         Your response format should be:
         <en>[Your English response goes here]</en>

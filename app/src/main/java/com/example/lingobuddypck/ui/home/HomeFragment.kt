@@ -2,6 +2,7 @@ package com.example.lingobuddypck.ui.home
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +12,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.NavHostFragment.Companion.findNavController
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.lingobuddypck.ui.ChatWithAIActivity
@@ -23,10 +26,8 @@ import com.example.lingobuddypck.ui.TestActivity
 import com.example.lingobuddypck.adapter.FeatureAdapter
 import com.example.lingobuddypck.data.Feature
 import com.example.lingobuddypck.data.Task
-import com.example.lingobuddypck.utils.TopicUtils
-import com.example.lingobuddypck.utils.TaskManager
-import com.example.lingobuddypck.ui.NavigationActivity
 import com.example.lingobuddypck.ui.dictionary.SavedWordsFragment
+import com.example.lingobuddypck.utils.TaskManager
 
 class HomeFragment : Fragment() {
 
@@ -174,7 +175,6 @@ class HomeFragment : Fragment() {
 
     private fun startPassageQuizActivity() {
         val intent = Intent(requireContext(), PassageQuizActivity::class.java).apply {
-            // Pass the topic if the task is about a specific topic
             if (TaskManager.isTaskInToday(requireContext(), TaskManager.TaskType.PASSAGE_QUIZ_TOPIC)) {
                 putExtra("topic", TaskManager.getDailyTopic(requireContext()))
             }
@@ -188,9 +188,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun startDictionaryFragment() {
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.nav_host_fragment, SavedWordsFragment())
-            .addToBackStack(null)
-            .commit()
+        findNavController().navigate(R.id.action_navigation_home_to_navigation_saved_words)
     }
 }

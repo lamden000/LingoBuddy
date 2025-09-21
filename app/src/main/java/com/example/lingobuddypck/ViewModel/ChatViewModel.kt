@@ -148,7 +148,6 @@ class ChatViewModel : ViewModel() {
         val request = ChatRequest(
             model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
             messages = historyForAI,
-            temperature = 0.5
         )
 
         RetrofitClient.instance.chatWithAI(request).enqueue(object : Callback<ChatResponse> {

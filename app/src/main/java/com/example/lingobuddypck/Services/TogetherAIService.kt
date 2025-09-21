@@ -1,6 +1,7 @@
 package com.example.lingobuddypck.Services
 import android.net.Uri
 import android.os.Parcelable
+import com.example.lingobuddypck.BuildConfig
 import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
 import retrofit2.Call
@@ -9,20 +10,25 @@ import retrofit2.http.Headers
 import retrofit2.http.POST
 
 interface TogetherApi {
-    @Headers("Content-Type: application/json", "Authorization: Bearer 54b9de63b3f8a19573732caa41714fe6711816bf6ac33ceec867a26c6e8cd7e7")
     @POST("inference")
     fun chatWithAI(@Body request: ChatRequest): Call<ChatResponse>
 
-    @Headers("Content-Type: application/json", "Authorization: Bearer 54b9de63b3f8a19573732caa41714fe6711816bf6ac33ceec867a26c6e8cd7e7")
     @POST("inference")
     fun chatWithImageAI(@Body request: ChatRequestImage): Call<ChatImageResponse>
 }
 
+interface OpenAIAPI {
+    @POST("chat/completions")
+    fun chatWithAI(@Body request: ChatRequest): Call<ChatResponse>
+    @POST("chat/completions")
+    fun chatWithImageAI(@Body request: ChatRequestImage): Call<ChatImageResponse>
+}
+
+
 data class ChatRequest(
     val model: String,
     val messages: List<Message>,
-    val top_k: Int=20,
-    val max_tokens: Int = 2000,
+    val max_tokens: Int = 3000,
     val temperature: Double = 0.7
 )
 
@@ -50,7 +56,7 @@ data class ChatImageResponse(
 )
 
 data class ChatRequestImage(
-    val model: String ,
+    val model: String,
     val messages: List<Map<String, Any>>,
     val max_tokens: Int = 1000
 )

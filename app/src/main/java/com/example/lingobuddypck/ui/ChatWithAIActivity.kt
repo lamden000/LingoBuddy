@@ -24,6 +24,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
 import android.util.Log
 import androidx.lifecycle.lifecycleScope
+import com.example.lingobuddypck.BuildConfig
 import com.example.lingobuddypck.R
 import com.example.lingobuddypck.Repository.FirebaseWordRepository
 import com.example.lingobuddypck.Services.Message
@@ -70,6 +71,7 @@ class ChatWithAIActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         loadingSpinner = findViewById(R.id.loadingSpinner)
         recyclerView = findViewById(R.id.chatRecyclerView)
         micButton = findViewById(R.id.micButton)
+
 
         adapter = ChatAdapter(ArrayList(), this, FirebaseWordRepository(), onSpeakClick = { text ->
             lifecycleScope.launch {

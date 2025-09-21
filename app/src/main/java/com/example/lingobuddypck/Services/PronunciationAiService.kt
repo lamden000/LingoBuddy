@@ -29,7 +29,7 @@ class PronunciationAiService(
         val model = if (isCustom) "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free" else "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
 
         val request = ChatRequest(
-            model,temperature=1.3, messages = listOf(
+            model, messages = listOf(
                 Message("user", prompt)
             )
         )
@@ -69,7 +69,7 @@ class PronunciationAiService(
 
         val request = ChatRequest(model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", messages = listOf(
             Message("user", prompt)
-        ), temperature = 0.7)
+        ))
 
         val response = withContext(Dispatchers.IO) {
             retrofitClient.chatWithAI(request).awaitResponse()

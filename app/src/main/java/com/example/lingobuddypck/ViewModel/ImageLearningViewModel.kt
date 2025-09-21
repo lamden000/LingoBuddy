@@ -11,6 +11,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lingobuddypck.Network.RetrofitClient
+import com.example.lingobuddypck.Network.RetrofitClientOpenAI
 import com.example.lingobuddypck.Services.ChatImageResponse
 import com.example.lingobuddypck.Services.ChatRequest
 import com.example.lingobuddypck.Services.ChatRequestImage
@@ -18,6 +19,7 @@ import com.example.lingobuddypck.Services.ChatResponse
 import com.example.lingobuddypck.Services.Message
 import com.example.lingobuddypck.data.ImageQuiz
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -48,6 +50,7 @@ class ImageLearningViewModel : ViewModel() {
     private val chatHistory = mutableListOf<Message>()
     private val MAX_CHAT_HISTORY = 5
     val isWaitingForResponse = MutableLiveData<Boolean>(false)
+    val imageModel ="meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
 
     data class QuizFeedback(
         val status: String, // "correct" or "incorrect"
@@ -66,7 +69,7 @@ class ImageLearningViewModel : ViewModel() {
     init {
         val aiMessage = Message(
             content = "Xin chào, tôi có thể giúp gì cho bạn?",
-            role = "AI",
+            role = "assistant",
             imageUri = null
         )
         val currentMessages = _chatMessages.value.orEmpty().toMutableList()
@@ -82,10 +85,19 @@ class ImageLearningViewModel : ViewModel() {
                 val contentList = mutableListOf<Map<String, Any>>()
                 val currentMessages = _chatMessages.value.orEmpty().toMutableList()
                 var base64ImageForUserMessage: String? = null
-                // Perform the image encoding here, within the coroutine scope
+
+                if (message.isNotEmpty()) {
+                    contentList.add(mapOf("type" to "text", "text" to message))
+                }
+
                 if (imageUri != null) {
                     base64ImageForUserMessage = encodeImageToBase64(context, imageUri)
-                    contentList.add(mapOf("type" to "image_url", "image_url" to mapOf("url" to base64ImageForUserMessage)))
+                    contentList.add(
+                        mapOf(
+                            "type" to "image_url",
+                            "image_url" to mapOf("url" to base64ImageForUserMessage)
+                        )
+                    )
                 }
 
                 val userMessage = Message(
@@ -94,12 +106,9 @@ class ImageLearningViewModel : ViewModel() {
                     imageUri = imageUri,
                     imageUrl = base64ImageForUserMessage
                 )
+
                 currentMessages.add(userMessage)
                 _chatMessages.value = currentMessages
-                // Add user message
-                if (message.isNotEmpty()) {
-                    contentList.add(mapOf("type" to "text", "text" to message))
-                }
 
                 // Prepare the messages for the request, including chat history
                 val messagesForRequest = mutableListOf<Map<String, Any>>()
@@ -120,9 +129,39 @@ class ImageLearningViewModel : ViewModel() {
                 messagesForRequest.add(mapOf("role" to "user", "content" to contentList))
 
                 val request = ChatRequestImage(
-                    model = "meta-llama/Llama-Vision-Free",
-                    messages = messagesForRequest
+                    model = imageModel,
+                    messages = messagesForRequest,
+                    max_tokens = 1000
                 )
+
+                ///////
+                val gson = GsonBuilder().setPrettyPrinting().create()
+
+                val requestForLogging = request.copy() // giữ nguyên request thật để gửi
+
+// Tạo phiên bản log-safe
+                val messagesForLogging = requestForLogging.messages.map { msg ->
+                    val contentList = msg["content"] as? MutableList<Map<String, Any>> ?: mutableListOf()
+                    val contentListMasked = contentList.map { contentMap ->
+                        if (contentMap["type"] == "image_url") {
+                            // Thay base64 bằng placeholder
+                            mapOf("type" to "image_url", "image_url" to mapOf("url" to "--- base64 removed ---"))
+                        } else contentMap
+                    }
+                    mapOf("role" to msg["role"], "content" to contentListMasked)
+                }
+
+                val jsonMasked = gson.toJson(
+                    mapOf(
+                        "model" to requestForLogging.model,
+                        "max_tokens" to requestForLogging.max_tokens,
+                        "messages" to messagesForLogging
+                    )
+                )
+
+                Log.d("API_REQUEST_SAFE", jsonMasked)
+                //////
+
                 isWaitingForResponse.value=true
                 // Call the API (using enqueue for Retrofit, which handles its own threading)
                 RetrofitClient.instance.chatWithImageAI(request).enqueue(object : Callback<ChatImageResponse> {
@@ -134,7 +173,7 @@ class ImageLearningViewModel : ViewModel() {
 
                             val aiMessage = Message(
                                 content = responseContent,
-                                role = "AI",
+                                role = "assistant",
                                 imageUri = null
                             )
 
@@ -154,7 +193,7 @@ class ImageLearningViewModel : ViewModel() {
 
                         } else {
                             _loading.value = false
-                            _chatMessages.value = listOf(Message("Error: ${response.message()}", "AI"))
+                            _chatMessages.value = listOf(Message( "AI","Error: ${response.message()}"))
                         }
                     }
 
@@ -168,7 +207,7 @@ class ImageLearningViewModel : ViewModel() {
             } catch (e: Exception) {
                 _loading.value = false
                 isWaitingForResponse.value=false
-                _chatMessages.value = listOf(Message("Error encoding image: ${e.message}", "AI"))
+                _chatMessages.value = listOf(Message("AI", "Error encoding image: ${e.message}"))
                 Log.e("IMAGE_ENCODING", "Image encoding failed", e)
             }
         }
@@ -182,7 +221,7 @@ class ImageLearningViewModel : ViewModel() {
         val byteArrayOutputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream)
         val byteArray = byteArrayOutputStream.toByteArray()
-        return@withContext "data:image/jpeg;base64," + Base64.encodeToString(byteArray, Base64.DEFAULT)
+        return@withContext "data:image/jpeg;base64," + Base64.encodeToString(byteArray, Base64.NO_WRAP)
     }
 
     fun generateQuizFromImage(context: Context, imageUri: Uri) {
@@ -194,7 +233,6 @@ class ImageLearningViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                // Step 1: Get image description from Llama-Vision-Free
                 val base64Image = encodeImageToBase64(context, imageUri)
                 val descriptionPrompt = """
                     Please describe this image in detail, focusing on:
@@ -213,7 +251,7 @@ class ImageLearningViewModel : ViewModel() {
                 )
 
                 val visionRequest = ChatRequestImage(
-                    model = "meta-llama/Llama-Vision-Free",
+                    model = imageModel,
                     messages = listOf(
                         mapOf("role" to "user", "content" to visionContentList)
                     )

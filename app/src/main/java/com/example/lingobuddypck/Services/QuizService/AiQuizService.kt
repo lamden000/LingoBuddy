@@ -343,7 +343,6 @@ class AiQuizService(
         val request = ChatRequest(
             model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", // Or parameterize the model
             messages = messages,
-            temperature = 0.1
         )
 
         val response = retrofitClient.chatWithAI(request).awaitResponse()

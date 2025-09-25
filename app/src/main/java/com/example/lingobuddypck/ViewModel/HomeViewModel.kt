@@ -1,4 +1,4 @@
-package com.example.lingobuddypck.ui.home
+package com.example.lingobuddypck.ViewModel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData

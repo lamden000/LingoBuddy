@@ -1,4 +1,4 @@
-package com.example.lingobuddypck.ui
+package com.example.lingobuddypck.ui.RolePlay
 
 import android.Manifest
 import android.app.Activity
@@ -21,7 +21,6 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer

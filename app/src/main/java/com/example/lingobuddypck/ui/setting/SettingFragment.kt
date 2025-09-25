@@ -13,6 +13,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.lingobuddypck.R
+import com.example.lingobuddypck.ViewModel.SettingViewModel
 import com.example.lingobuddypck.databinding.FragmentSettingBinding
 import com.example.lingobuddypck.ui.LoginActivity
 import com.google.android.material.textfield.TextInputEditText

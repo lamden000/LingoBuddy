@@ -1,4 +1,4 @@
-package com.example.lingobuddypck.ui
+package com.example.lingobuddypck.ui.RolePlay
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -10,7 +10,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Spinner
 import androidx.appcompat.widget.SwitchCompat
-import androidx.navigation.fragment.NavHostFragment.Companion.findNavController
 import androidx.navigation.fragment.findNavController
 import com.example.lingobuddypck.R
 

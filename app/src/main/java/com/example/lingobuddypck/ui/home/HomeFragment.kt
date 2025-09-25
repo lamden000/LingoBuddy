@@ -2,7 +2,6 @@ package com.example.lingobuddypck.ui.home
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,7 +11,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.NavHostFragment.Companion.findNavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,7 +24,6 @@ import com.example.lingobuddypck.ui.TestActivity
 import com.example.lingobuddypck.adapter.FeatureAdapter
 import com.example.lingobuddypck.data.Feature
 import com.example.lingobuddypck.data.Task
-import com.example.lingobuddypck.ui.dictionary.SavedWordsFragment
 import com.example.lingobuddypck.utils.TaskManager
 
 class HomeFragment : Fragment() {

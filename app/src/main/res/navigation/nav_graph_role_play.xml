@@ -6,7 +6,7 @@
 
     <fragment
         android:id="@+id/roleSelectionFragment"
-        android:name="com.example.lingobuddypck.ui.RoleSelectionFragment"
+        android:name="com.example.lingobuddypck.ui.RolePlay.RoleSelectionFragment"
         android:label="Choose Roles">
         <action
             android:id="@+id/action_roleSelectionFragment_to_rolePlayChatFragment"
@@ -17,7 +17,7 @@
 
     <fragment
         android:id="@+id/rolePlayChatFragment"
-        android:name="com.example.lingobuddypck.ui.RolePlayChatFragment"
+        android:name="com.example.lingobuddypck.ui.RolePlay.RolePlayChatFragment"
         android:label="Roleplay Chat">
         <argument
             android:name="userRole"
